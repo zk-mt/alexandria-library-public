@@ -30,7 +30,7 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1, x_proto=1)
 
 # CRITICAL FIX 2: Define the explicit public redirect URI
 # Public domain for external URLs (adjust to your deployed domain)
-PUBLIC_DOMAIN = 'http://alexandria.sd25.org'
+PUBLIC_DOMAIN = 'http://alexandria.sd123.org'
 # Avoid calling url_for at module import time (no request context). Use the explicit
 # callback path registered in Google Cloud Console instead.
 OAUTH_REDIRECT_URI = PUBLIC_DOMAIN + '/authorize'
@@ -189,12 +189,11 @@ def image_proxy():
         return 'Error loading image', 500
 oauth = OAuth(app)
 from dotenv import load_dotenv
-load_dotenv()  # Load environment variables from .env file
+load_dotenv()
 
-# Google SSO is now handled dynamically in endpoints to support DB-stored credentials
+# Google SSO credentials can be configured via environment variables or database
 
-
-# SQLite only (PostgreSQL removed)
+# Database configuration
 USE_SQLITE = True
 SQLITE_DB_PATH = os.getenv('SQLITE_DB_PATH', os.path.join(app.root_path, 'data', 'alexandria.db'))
 # Ensure SQLite directory exists
@@ -995,16 +994,7 @@ def auth_me():
         else:
             app.logger.warning(f"No role found for {email} in district_users")
             
-        # Also check local admin (if not in district_users for some reason)
-        # This check is for users who might be admins in the 'users' table context
-        # but not explicitly assigned a role in 'district_users' for a specific district.
-        # The 'users' table itself doesn't store roles, so this might be a conceptual check
-        # for a global admin status, or a fallback if district_users is empty.
-        # Given the instruction, we prioritize district_users.
-        # The original comment "Local users created via setup are admins? Setup made them admin in district_users anyway."
-        # suggests this might be redundant if setup correctly populates district_users.
-        # However, faithfully implementing the provided edit:
-        if role != 'admin': # Only check if not already determined as admin from district_users
+        if role != 'admin':
              if USE_SQLITE:
                  cursor.execute("SELECT 1 FROM users WHERE email=? AND is_admin=1", (email,)) # Assuming an 'is_admin' column for local users
              else:
@@ -1040,7 +1030,7 @@ def auth_logout():
 
 @app.route('/api/districts', methods=['POST'])
 def create_district():
-    """Create a new district via API. Called from frontend setup form."""
+    """Initial district setup (single-tenant only). Called during first-run setup."""
     try:
         data = request.get_json() or {}
         session_user = session.get('user')
@@ -1423,7 +1413,7 @@ def admin_required(f):
         cursor = conn.cursor()
         is_admin = False
         try:
-            # Check if user has admin role in ANY district (sufficient for single tenant)
+            # Check if user has admin role
             if USE_SQLITE:
                 cursor.execute("SELECT 1 FROM district_users WHERE email=? AND role='admin'", (email,))
             else:
@@ -1799,6 +1789,64 @@ def serve_invoice(filename):
     # Serve the file
     return send_from_directory(str(upload_root), safe_name)
 
+@app.route('/admin/apps/<int:app_id>/upload-invoice', methods=['POST'])
+@admin_required
+def upload_invoice(app_id: int):
+    """Upload invoice files to an existing app (admin only)."""
+    if 'files' not in request.files and 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No files provided'}), 400
+    
+    # Support both 'files' (multiple) and 'file' (single)
+    files = request.files.getlist('files') or request.files.getlist('file')
+    if not files or not files[0].filename:
+        return jsonify({'success': False, 'error': 'No files selected'}), 400
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Verify app exists
+        cursor.execute("SELECT invoices FROM apps WHERE id=%s", (app_id,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({'success': False, 'error': 'App not found'}), 404
+        
+        # Get current invoices
+        current_invoices = result[0] or ''
+        invoice_list = [inv.strip() for inv in current_invoices.split(',') if inv.strip()]
+        
+        # Upload each file
+        uploaded_paths = []
+        for file in files:
+            if file and allowed_file(file.filename):
+                uploaded_path = save_uploaded_file(file, prefix='invoice')
+                if uploaded_path:
+                    invoice_list.append(uploaded_path)
+                    uploaded_paths.append(uploaded_path)
+        
+        if not uploaded_paths:
+            return jsonify({'success': False, 'error': 'No valid files uploaded'}), 400
+        
+        # Update database
+        new_invoices = ','.join(invoice_list)
+        cursor.execute("UPDATE apps SET invoices=%s WHERE id=%s", (new_invoices, app_id))
+        conn.commit()
+        
+        return jsonify({
+            'success': True,
+            'uploaded': uploaded_paths,
+            'all_invoices': invoice_list
+        })
+        
+    except Exception as e:
+        conn.rollback()
+        app.logger.exception("Error uploading invoices")
+        return jsonify({'success': False, 'error': 'Upload failed'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
 @app.route('/admin/apps/<int:app_id>/delete-invoice', methods=['POST'])
 @admin_required
 def delete_invoice(app_id: int):
@@ -1880,7 +1928,6 @@ def delete_invoice(app_id: int):
 @app.route('/api/setup/status')
 def setup_status():
     """Check if the application is already set up."""
-    # Check if we have any districts
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -1893,7 +1940,7 @@ def setup_status():
         # If we have a district and a user, setup is complete
         is_setup = (district_count > 0 and user_count > 0)
         
-        # If setup is done, return the slug of the first district to redirect
+        # If setup is done, return the district slug
         redirect_slug = None
         if is_setup:
             cursor.execute("SELECT slug FROM districts LIMIT 1")
@@ -1934,15 +1981,14 @@ def setup_init():
     cursor = conn.cursor()
     
     try:
-        # 1. DOUBLE CHECK: Ensure no districts exist to prevent takeover
+        # Ensure district doesn't already exist to prevent duplicate setup
         cursor.execute("SELECT COUNT(1) FROM districts")
         if cursor.fetchone()[0] > 0:
              cursor.close()
              conn.close()
              return jsonify({'error': 'Setup already complete. Cannot re-initialize.'}), 403
 
-        # 2. Create District
-        # 2. Create District
+        # Create district
         if USE_SQLITE:
             cursor.execute(
                 "INSERT INTO districts (name, slug, contact_email, created_by_email) VALUES (?, ?, ?, ?)",
@@ -1965,7 +2011,7 @@ def setup_init():
             (admin_email, admin_name, pw_hash)
         )
         
-        # 4. Create District Admin Role
+        # Assign admin role
         cursor.execute(
             "INSERT INTO district_users (district_id, email, role, name) VALUES (%s, %s, 'admin', %s)",
             (district_id, admin_email, admin_name)
@@ -2150,7 +2196,7 @@ def update_district(slug):
 
 @app.route('/api/districts/<slug>/apps', methods=['GET'])
 def api_district_apps(slug):
-    """Return all apps for the given district (single-tenant: all apps)."""
+    """Return all apps (single-tenant application)."""
     try:
         ensure_default_district()
         init_db()  # Ensure tables exist before querying
@@ -2436,7 +2482,7 @@ def api_update_delete_app(slug, app_id):
 
 @app.route('/api/districts/<slug>/users', methods=['GET', 'POST'])
 def api_district_users(slug):
-    """List or add users for a district (SQLite-backed)."""
+    """List or add users (single-tenant application)."""
     user, error_resp = require_session_user_json()
     if error_resp:
         return error_resp
