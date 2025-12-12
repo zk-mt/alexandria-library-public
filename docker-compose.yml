@@ -1,0 +1,45 @@
+services:
+  # Single-container app (backend + built frontend) using SQLite
+  app:
+    container_name: alexandria-app
+    restart: unless-stopped
+    build:
+      context: .
+    ports:
+      - '80:5000'
+    env_file:
+      - .env
+    environment:
+      USE_SQLITE: 'true'
+
+      # Flask Config
+      FLASK_APP: app.py
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-changeme_in_production}
+
+      # Google SSO (User must provide these)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+
+      # Single Tenant Configuration
+      DISTRICT_NAME: ${DISTRICT_NAME:-"Default District"}
+      DISTRICT_CONTACT_EMAIL: ${DISTRICT_CONTACT_EMAIL:-"admin@example.com"}
+      INIT_ADMIN_EMAIL: ${INIT_ADMIN_EMAIL:-admin}
+      INIT_ADMIN_PASSWORD: ${INIT_ADMIN_PASSWORD:-admin}
+
+    volumes:
+      # Persistent volume for uploaded documents
+      - alexandria_documents:/app/static/documents:rw
+      # Persistent volume for global app logos
+      - alexandria_global_apps:/app/static/global_apps:rw
+      # Persistent volume for sessions
+      - alexandria_sessions:/app/flask_session:rw
+      # Persist the SQLite database folder
+      - alexandria_sqlite_data:/app/data:rw
+
+# Top-level volumes definition for data persistence
+volumes:
+  alexandria_documents:
+  alexandria_sessions:
+  alexandria_global_apps:
+  alexandria_sqlite_data:

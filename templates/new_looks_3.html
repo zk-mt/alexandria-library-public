@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Concept 03 · Noir List</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;600&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+        body {
+            font-family: 'Chivo', 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont;
+            background: radial-gradient(circle at 20% 20%, rgba(79,70,229,0.25), transparent 45%),
+                        radial-gradient(circle at 80% 0%, rgba(14,165,233,0.25), transparent 35%),
+                        #020617;
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(2, 6, 23, 0.75);
+            backdrop-filter: blur(26px);
+        }
+        .accent-border {
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+        .status-pill {
+            border-radius: 999px;
+            font-size: 0.7rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+        .meter-track {
+            height: 0.35rem;
+            background: rgba(148, 163, 184, 0.25);
+        }
+        .meter-fill {
+            width: calc(var(--meter, 0) * 1%);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100">
+    <div class="relative overflow-hidden">
+        <div class="pointer-events-none absolute inset-0 opacity-40">
+            <div class="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-sky-500 blur-[120px]"></div>
+            <div class="absolute right-0 top-1/3 h-80 w-80 translate-x-1/3 rounded-full bg-indigo-500 blur-[140px]"></div>
+        </div>
+        <main class="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-10">
+            <header class="rounded-[36px] border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-950/70 p-10 shadow-[0_35px_120px_rgba(15,23,42,0.6)]">
+                <div class="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.5em] text-slate-400">Concept 03</p>
+                        <h1 class="mt-4 text-4xl font-semibold text-white">Noir list · One row per tool</h1>
+                        <p class="mt-4 max-w-2xl text-base text-slate-300">
+                            Dark-mode inventory built for leadership reviews. Each row carries context, links, and compliance signals without breaking momentum.
+                        </p>
+                    </div>
+                    <dl class="grid gap-6 text-right sm:grid-cols-2">
+                        <div>
+                            <dt class="text-xs uppercase tracking-[0.35em] text-slate-500">Tools tracked</dt>
+                            <dd class="mt-2 text-4xl font-semibold text-white">{{ apps|length }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs uppercase tracking-[0.35em] text-slate-500">Live tags</dt>
+                            <dd class="mt-2 text-4xl font-semibold text-white">{{ all_tags|length }}</dd>
+                        </div>
+                    </dl>
+                </div>
+                <form class="mt-10 rounded-3xl border border-white/10 bg-white/5 p-6 text-white shadow-inner" method="get" action="{{ url_for('new_looks_v3') }}">
+                    <div class="grid gap-4 md:grid-cols-[2fr_1fr]">
+                        <label class="text-sm uppercase tracking-[0.3em] text-slate-400">
+                            Search
+                            <input type="search" name="q" value="{{ query }}" placeholder="Filter by name" class="mt-2 w-full rounded-2xl border border-white/20 bg-slate-950/60 px-4 py-3 text-base text-white placeholder:text-slate-500 focus:border-indigo-400 focus:ring-indigo-400" />
+                        </label>
+                        <label class="text-sm uppercase tracking-[0.3em] text-slate-400">
+                            Tag focus
+                            <select name="tag" class="mt-2 w-full rounded-2xl border border-white/20 bg-slate-950/60 px-4 py-3 text-base text-white focus:border-indigo-400 focus:ring-indigo-400">
+                                <option value="">All tags</option>
+                                {% for option in all_tags %}
+                                    <option value="{{ option }}" {% if tag == option %}selected{% endif %}>{{ option }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-2 text-xs">
+                        {% for option in all_tags[:8] %}
+                            <button type="submit" name="tag" value="{{ option }}" class="rounded-full border border-white/20 px-3 py-1 text-white/80 transition hover:border-indigo-400 hover:text-white {% if tag == option %}bg-indigo-500/30 text-white{% endif %}">
+                                {{ option }}
+                            </button>
+                        {% else %}
+                            <p class="text-slate-400">Tags publish automatically once added in Admin.</p>
+                        {% endfor %}
+                    </div>
+                </form>
+            </header>
+
+            <section class="mt-12 grid gap-8 lg:grid-cols-[2fr_1fr]">
+                <div class="space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.4em] text-slate-500">Live catalog</p>
+                            <h2 class="mt-2 text-2xl font-semibold text-white">One row per tool</h2>
+                        </div>
+                        <div class="flex gap-4 text-sm text-slate-400">
+                            <span>Sorted alphabetically</span>
+                            <span>Links open in new tab</span>
+                        </div>
+                    </div>
+
+                    {% if apps %}
+                        <div class="space-y-4">
+                            {% for app in apps %}
+                                <article class="rounded-[28px] border border-white/5 bg-slate-900/80 p-6 ring-1 ring-white/5 transition hover:border-indigo-400/50">
+                                    <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                                        <div class="space-y-3">
+                                            <div class="flex flex-wrap items-center gap-3">
+                                                <span class="status-pill bg-white/5 px-3 py-1 text-[0.7rem] text-slate-300">{{ app[8] or 'Pending' }}</span>
+                                                {% if app[5] %}
+                                                    <span class="rounded-full bg-indigo-500/20 px-3 py-1 text-xs font-medium text-indigo-200">{{ app[5] }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <h3 class="text-2xl font-semibold text-white">{{ app[1] }}</h3>
+                                                <p class="text-sm uppercase tracking-[0.3em] text-slate-400">{{ app[3] or 'Independent publisher' }}</p>
+                                            </div>
+                                            {% if app[2] %}
+                                                <p class="text-sm text-slate-300">{{ app[2] }}</p>
+                                            {% endif %}
+                                            <div class="flex flex-wrap gap-2 text-xs text-slate-400">
+                                                {% set tags = app[9].split(',') if app[9] else [] %}
+                                                {% set ns = namespace(rendered=False) %}
+                                                {% for item in tags %}
+                                                    {% set label = item.strip() %}
+                                                    {% if label %}
+                                                        {% set ns.rendered = True %}
+                                                        <span class="rounded-full border border-white/10 px-3 py-1">{{ label }}</span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                {% if not ns.rendered %}
+                                                    <span class="rounded-full border border-white/10 px-3 py-1">Untagged</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-col gap-3 text-sm text-right text-slate-300">
+                                            {% if app[4] %}
+                                                <a href="{{ app[4] }}" target="_blank" rel="noopener" class="rounded-2xl border border-white/10 px-4 py-2 text-white hover:border-indigo-400 hover:text-white">Privacy review</a>
+                                            {% endif %}
+                                            {% if app[6] %}
+                                                <a href="{{ app[6] }}" target="_blank" rel="noopener" class="rounded-2xl border border-white/10 px-4 py-2 text-white/80 hover:border-cyan-400 hover:text-white">Docs</a>
+                                            {% endif %}
+                                            {% if app[11] %}
+                                                <a href="{{ app[11] }}" target="_blank" rel="noopener" class="rounded-2xl border border-white/10 px-4 py-2 text-white/80 hover:border-emerald-400 hover:text-white">Product page</a>
+                                            {% endif %}
+                                            {% if not app[4] and not app[6] and not app[11] %}
+                                                <p class="text-xs text-slate-500">No links yet.</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="rounded-[28px] border border-dashed border-white/15 bg-slate-900/70 p-10 text-center text-slate-400">
+                            Publish at least one tool to preview this concept.
+                        </div>
+                    {% endif %}
+                </div>
+
+                <aside class="space-y-6">
+                    <section class="glass rounded-3xl p-6 accent-border">
+                        <p class="text-xs uppercase tracking-[0.4em] text-slate-400">Status mix</p>
+                        <div class="mt-4 space-y-3">
+                            {% for label, count in status_counts %}
+                                {% set percent = (count / (apps|length or 1)) * 100 %}
+                                <div>
+                                    <div class="flex items-center justify-between text-sm text-slate-300">
+                                        <span>{{ label }}</span>
+                                        <span>{{ count }}</span>
+                                    </div>
+                                    <div class="meter-track mt-2 rounded-full">
+                                        <div class="meter-fill h-full rounded-full bg-gradient-to-r from-indigo-500 to-sky-400" style="--meter: {{ '%.2f' % percent }};"></div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p class="text-sm text-slate-500">Add tools to reveal mix.</p>
+                            {% endfor %}
+                        </div>
+                    </section>
+
+                    <section class="glass rounded-3xl p-6 accent-border">
+                        <p class="text-xs uppercase tracking-[0.4em] text-slate-400">SOPPA coverage</p>
+                        <ul class="mt-4 space-y-3 text-sm text-slate-300">
+                            {% for label, count in soppa_counts %}
+                                <li class="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 px-4 py-3">
+                                    <span>{{ label }}</span>
+                                    <span class="text-slate-400">{{ count }}</span>
+                                </li>
+                            {% else %}
+                                <li class="rounded-2xl border border-dashed border-white/10 px-4 py-3 text-slate-500">SOPPA statuses publish automatically.</li>
+                            {% endfor %}
+                        </ul>
+                    </section>
+
+                    <section class="glass rounded-3xl p-6 accent-border">
+                        <p class="text-xs uppercase tracking-[0.4em] text-slate-400">Vendor signal</p>
+                        <ul class="mt-4 space-y-3 text-sm text-slate-200">
+                            {% for vendor, count in top_vendors %}
+                                <li class="flex items-center justify-between rounded-2xl border border-white/5 px-4 py-3">
+                                    <span>{{ vendor }}</span>
+                                    <span class="text-slate-400">{{ count }} apps</span>
+                                </li>
+                            {% else %}
+                                <li class="rounded-2xl border border-dashed border-white/10 px-4 py-3 text-slate-500">Fill vendor names to unlock this list.</li>
+                            {% endfor %}
+                        </ul>
+                    </section>
+
+                    <section class="glass rounded-3xl p-6 accent-border">
+                        <p class="text-xs uppercase tracking-[0.4em] text-slate-400">Recent adds</p>
+                        <div class="mt-4 space-y-4">
+                            {% for app in recent_apps %}
+                                <article class="rounded-2xl border border-white/5 bg-slate-900/70 p-4">
+                                    <div class="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-500">
+                                        <span>ID {{ app[0] }}</span>
+                                        <span>{{ app[8] or 'Pending' }}</span>
+                                    </div>
+                                    <h4 class="mt-2 text-base font-semibold text-white">{{ app[1] }}</h4>
+                                    <p class="text-sm text-slate-400">{{ app[3] or 'Independent publisher' }}</p>
+                                </article>
+                            {% else %}
+                                <p class="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-slate-500">Add apps to see what floats to the top.</p>
+                            {% endfor %}
+                        </div>
+                    </section>
+                </aside>
+            </section>
+
+            <footer class="mt-16 border-t border-white/10 pt-8 text-sm text-slate-500">
+                Concept 03 · Alexandria Library · Noir list experiment
+            </footer>
+        </main>
+    </div>
+</body>
+</html>

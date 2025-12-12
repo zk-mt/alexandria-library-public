@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+{% block title %}Vendor Contacts{% endblock %}
+{% block extra_css %}
+<style>
+  :root {
+    --bg: #0b1021;
+    --panel: #0f162d;
+    --panel-2: #121a35;
+    --border: #1f2947;
+    --text: #e7ecf5;
+    --muted: #9fb0d6;
+    --accent: #4f8bff;
+    --accent-2: #7ce7f4;
+    --danger: #ef4444;
+    --success: #34d399;
+  }
+  body { background: var(--bg); }
+  .page-shell { max-width: 1200px; margin: 0 auto; padding: 32px 20px 56px; }
+  .page-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 16px; }
+  .page-title { font-size: 1.6rem; color: var(--text); margin: 0; }
+  .subtitle { color: var(--muted); margin: 4px 0 0; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.05); color: var(--muted); font-size: 0.85rem; }
+  .layout { display: grid; grid-template-columns: 340px 1fr; gap: 18px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
+  .panel h4 { margin: 0 0 10px; color: var(--text); }
+  .search-box { width: 100%; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text); }
+  .app-list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 210px); overflow: auto; padding-right: 4px; }
+  .app-card { border: 1px solid var(--border); background: var(--panel-2); padding: 10px 12px; border-radius: 12px; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; transition: border 0.2s, transform 0.1s; }
+  .app-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
+  .app-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .app-initial { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: #1e2742; color: var(--accent-2); font-weight: 700; }
+  .app-meta { display: flex; flex-direction: column; gap: 2px; color: var(--text); }
+  .app-meta .muted { color: var(--muted); font-size: 0.88rem; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; border: 1px solid var(--border); color: var(--muted); }
+  .badge.soft { background: rgba(79, 139, 255, 0.08); color: var(--accent); border-color: rgba(79,139,255,0.4); }
+  .badge.good { background: rgba(52, 211, 153, 0.08); color: var(--success); border-color: rgba(52,211,153,0.4); }
+  .badge.danger { background: rgba(239, 68, 68, 0.08); color: var(--danger); border-color: rgba(239,68,68,0.4); }
+  .empty { color: var(--muted); text-align: center; padding: 18px 6px; border: 1px dashed var(--border); border-radius: 12px; }
+  .detail-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .detail-title { margin: 0; color: var(--text); font-size: 1.2rem; }
+  .actions { display: flex; gap: 8px; }
+  .btn { border: 1px solid var(--border); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #0b1021; font-weight: 700; }
+  .btn.danger { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,0.08); }
+  .contacts { display: flex; flex-direction: column; gap: 10px; }
+  .contact-card { border: 1px solid var(--border); background: var(--panel-2); border-radius: 12px; padding: 12px; display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  .contact-name { color: var(--text); font-weight: 700; margin: 0; }
+  .contact-meta { color: var(--muted); font-size: 0.92rem; margin: 0; }
+  .contact-notes { color: var(--muted); font-size: 0.9rem; margin: 6px 0 0; }
+  .contact-actions { display: flex; gap: 6px; }
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .form-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 50; }
+  .form-overlay.active { display: flex; }
+  .form-card { width: 420px; max-width: 90vw; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+  .form-grid { display: grid; gap: 10px; }
+  .form-grid label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-weight: 600; }
+  .form-grid input, .form-grid textarea { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; color: var(--text); }
+  .form-grid textarea { resize: vertical; min-height: 80px; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  @media (max-width: 1024px) { .layout { grid-template-columns: 1fr; } .app-list { max-height: 320px; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-shell">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Vendor Contacts</h1>
+      <p class="subtitle">Centralize vendor contacts per app. Admin-only.</p>
+    </div>
+    <div class="pill">
+      <span>CSRF token ready</span>
+    </div>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h4>Applications</h4>
+      <input id="app-search" class="search-box" placeholder="Search apps or vendors..." />
+      <div class="app-list" id="app-list"></div>
+    </div>
+    <div class="panel">
+      <div class="detail-head">
+        <div>
+          <p class="subtitle" id="selected-subtitle">Select an app to view contacts</p>
+          <h2 class="detail-title" id="selected-title">No app selected</h2>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="add-contact-btn" disabled>+ Add contact</button>
+        </div>
+      </div>
+      <div class="tag-row" id="selected-badges"></div>
+      <div class="contacts" id="contact-list">
+        <div class="empty">Choose an application to load vendor contacts.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="form-overlay" id="contact-form-modal">
+  <div class="form-card">
+    <div class="flex-between" style="margin-bottom:10px;">
+      <h3 style="color:var(--text); margin:0;" id="form-title">New contact</h3>
+      <button class="btn" id="close-form">Close</button>
+    </div>
+    <form id="contact-form" class="form-grid">
+      <label>Name<input name="name" required /></label>
+      <label>Email<input name="email" type="email" required /></label>
+      <label>Phone<input name="phone" /></label>
+      <label>Role / Title<input name="role" /></label>
+      <label>Tags (comma separated)<input name="tags" /></label>
+      <label>Notes<textarea name="notes"></textarea></label>
+      <label class="flex-between" style="font-weight:600; color:var(--muted);">
+        <span>Primary contact</span>
+        <input type="checkbox" name="is_primary" />
+      </label>
+      <div class="flex-between">
+        <button type="submit" class="btn primary" id="save-contact">Save</button>
+        <button type="button" class="btn" id="cancel-form">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  const csrfToken = "{{ session['csrf_token'] }}";
+  const appsEndpoint = "{{ url_for('api_admin_apps') }}";
+  const contactsEndpoint = (appId) => `/api/admin/apps/${appId}/contacts`;
+  const contactDetailEndpoint = (contactId) => `/api/admin/contacts/${contactId}`;
+
+  const state = {
+    apps: [],
+    filtered: [],
+    selectedApp: null,
+    contacts: [],
+    editingId: null,
+  };
+
+  const appListEl = document.getElementById('app-list');
+  const searchEl = document.getElementById('app-search');
+  const contactListEl = document.getElementById('contact-list');
+  const selectedTitle = document.getElementById('selected-title');
+  const selectedSubtitle = document.getElementById('selected-subtitle');
+  const selectedBadges = document.getElementById('selected-badges');
+  const addBtn = document.getElementById('add-contact-btn');
+  const formModal = document.getElementById('contact-form-modal');
+  const contactForm = document.getElementById('contact-form');
+  const formTitle = document.getElementById('form-title');
+
+  const soppaColor = (status) => {
+    if (!status) return 'badge';
+    if (status.toLowerCase().includes('compliant')) return 'badge good';
+    if (status.toLowerCase().includes('non')) return 'badge danger';
+    return 'badge';
+  };
+
+  const renderApps = () => {
+    if (!appListEl) return;
+    if (!state.filtered.length) {
+      appListEl.innerHTML = '<div class="empty">No apps match your search.</div>';
+      return;
+    }
+    appListEl.innerHTML = state.filtered
+      .map((app) => {
+        const initials = (app.name || app.company || '?').slice(0, 1).toUpperCase();
+        return `
+          <div class="app-card ${state.selectedApp === app.id ? 'active' : ''}" data-id="${app.id}">
+            <div class="app-initial">${initials}</div>
+            <div class="app-meta">
+              <div>${app.name}</div>
+              <div class="muted">${app.company || 'Vendor unknown'}</div>
+              <div class="muted">${app.contact_count || 0} contact${app.contact_count === 1 ? '' : 's'}</div>
+            </div>
+            <div class="badge">${app.status || 'Pending'}</div>
+          </div>`;
+      })
+      .join('');
+    document.querySelectorAll('.app-card').forEach((card) => {
+      card.addEventListener('click', () => selectApp(Number(card.dataset.id)));
+    });
+  };
+
+  const filterApps = () => {
+    const term = (searchEl.value || '').toLowerCase();
+    state.filtered = state.apps.filter((app) => {
+      return (
+        app.name.toLowerCase().includes(term) ||
+        (app.company || '').toLowerCase().includes(term) ||
+        (app.status || '').toLowerCase().includes(term)
+      );
+    });
+    renderApps();
+  };
+
+  const fetchApps = async () => {
+    appListEl.innerHTML = '<div class="empty">Loading apps…</div>';
+    try {
+      const res = await fetch(appsEndpoint, { credentials: 'same-origin' });
+      const data = await res.json();
+      state.apps = data.apps || [];
+      state.filtered = state.apps;
+      renderApps();
+    } catch (err) {
+      console.error(err);
+      appListEl.innerHTML = '<div class="empty">Unable to load apps.</div>';
+    }
+  };
+
+  const renderContacts = () => {
+    if (!state.selectedApp) {
+      contactListEl.innerHTML = '<div class="empty">Choose an application to load vendor contacts.</div>';
+      addBtn.disabled = true;
+      return;
+    }
+    addBtn.disabled = false;
+    if (!state.contacts.length) {
+      contactListEl.innerHTML = '<div class="empty">No contacts yet. Add one.</div>';
+      return;
+    }
+    contactListEl.innerHTML = state.contacts
+      .map((c) => `
+        <div class="contact-card">
+          <div>
+            <p class="contact-name">${c.name}${c.is_primary ? ' · <span class="badge good">Primary</span>' : ''}</p>
+            <p class="contact-meta">${c.email || 'No email'} ${c.phone ? ' · ' + c.phone : ''}</p>
+            <p class="contact-meta">${c.role || ''}</p>
+            ${c.tags ? `<div class="tag-row">${c.tags.split(',').map(t => `<span class="badge soft">${t.trim()}</span>`).join('')}</div>` : ''}
+            ${c.notes ? `<p class="contact-notes">${c.notes}</p>` : ''}
+          </div>
+          <div class="contact-actions">
+            <button class="btn" data-edit="${c.id}">Edit</button>
+            <button class="btn danger" data-delete="${c.id}">Delete</button>
+          </div>
+        </div>`)
+      .join('');
+    contactListEl.querySelectorAll('[data-edit]').forEach((btn) => btn.addEventListener('click', () => openForm(btn.dataset.edit)));
+    contactListEl.querySelectorAll('[data-delete]').forEach((btn) => btn.addEventListener('click', () => deleteContact(btn.dataset.delete)));
+  };
+
+  const selectApp = (id) => {
+    state.selectedApp = id;
+    const app = state.apps.find((a) => a.id === id);
+    selectedTitle.textContent = app ? `${app.name}` : 'No app selected';
+    selectedSubtitle.textContent = app ? (app.company || 'Vendor unknown') : 'Select an app to view contacts';
+    selectedBadges.innerHTML = '';
+    if (app) {
+      const soppa = document.createElement('span');
+      soppa.className = soppaColor(app.soppa_compliant);
+      soppa.textContent = app.soppa_compliant || 'SOPPA: n/a';
+      selectedBadges.appendChild(soppa);
+      const status = document.createElement('span');
+      status.className = 'badge';
+      status.textContent = app.status || 'Pending';
+      selectedBadges.appendChild(status);
+    }
+    document.querySelectorAll('.app-card').forEach((c) => c.classList.remove('active'));
+    const active = document.querySelector(`.app-card[data-id="${id}"]`);
+    if (active) active.classList.add('active');
+    loadContacts();
+  };
+
+  const loadContacts = async () => {
+    if (!state.selectedApp) return;
+    contactListEl.innerHTML = '<div class="empty">Loading contacts…</div>';
+    try {
+      const res = await fetch(contactsEndpoint(state.selectedApp), { credentials: 'same-origin' });
+      const data = await res.json();
+      state.contacts = data.contacts || [];
+      renderContacts();
+    } catch (err) {
+      console.error(err);
+      contactListEl.innerHTML = '<div class="empty">Unable to load contacts.</div>';
+    }
+  };
+
+  const openForm = (contactId = null) => {
+    state.editingId = contactId ? Number(contactId) : null;
+    formModal.classList.add('active');
+    contactForm.reset();
+    if (state.editingId) {
+      formTitle.textContent = 'Edit contact';
+      const contact = state.contacts.find((c) => c.id === state.editingId);
+      if (contact) {
+        contactForm.name.value = contact.name;
+        contactForm.email.value = contact.email;
+        contactForm.phone.value = contact.phone || '';
+        contactForm.role.value = contact.role || '';
+        contactForm.tags.value = contact.tags || '';
+        contactForm.notes.value = contact.notes || '';
+        contactForm.is_primary.checked = !!contact.is_primary;
+      }
+    } else {
+      formTitle.textContent = 'New contact';
+    }
+  };
+
+  const closeForm = () => {
+    formModal.classList.remove('active');
+    state.editingId = null;
+  };
+
+  const submitForm = async (e) => {
+    e.preventDefault();
+    if (!state.selectedApp) return;
+    const formData = new FormData(contactForm);
+    const payload = Object.fromEntries(formData.entries());
+    payload.is_primary = contactForm.is_primary.checked;
+    payload.csrf_token = csrfToken;
+    const isEdit = !!state.editingId;
+    const url = isEdit ? contactDetailEndpoint(state.editingId) : contactsEndpoint(state.selectedApp);
+    const method = isEdit ? 'PUT' : 'POST';
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'Save failed');
+        return;
+      }
+      await loadContacts();
+      closeForm();
+    } catch (err) {
+      console.error(err);
+      alert('Unable to save contact');
+    }
+  };
+
+  const deleteContact = async (id) => {
+    if (!confirm('Delete this contact?')) return;
+    try {
+      const res = await fetch(contactDetailEndpoint(id), {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ csrf_token: csrfToken }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'Delete failed');
+        return;
+      }
+      await loadContacts();
+    } catch (err) {
+      console.error(err);
+      alert('Unable to delete contact');
+    }
+  };
+
+  // Wire events
+  searchEl.addEventListener('input', filterApps);
+  addBtn.addEventListener('click', () => openForm());
+  document.getElementById('close-form').addEventListener('click', closeForm);
+  document.getElementById('cancel-form').addEventListener('click', closeForm);
+  contactForm.addEventListener('submit', submitForm);
+
+  fetchApps();
+</script>
+{% endblock %}

@@ -1,0 +1,5 @@
+Manual download required for:
+URL: https://sd25.app.learnplatform.com/api/v2/organizations/145612/organization_tools/253476/resources/78749
+Link text: ndpa
+Error: Resource not found
+Category: ndpa

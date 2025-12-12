@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Alexandria · Concept Surface 02</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ['Space Grotesk', 'Inter', 'ui-sans-serif', 'system-ui'],
+              body: ['Inter', 'ui-sans-serif', 'system-ui']
+            },
+            colors: {
+              canvas: '#020617',
+              panel: '#0f172a',
+              accent: '#7dd3fc',
+              accentMuted: '#1d4ed8'
+            },
+            boxShadow: {
+              card: '0 25px 60px rgba(15,23,42,0.45)'
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      .clamped {
+        display: -webkit-box;
+        line-clamp: 3;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body class="bg-canvas text-slate-100 min-h-screen">
+    <div class="fixed inset-0 pointer-events-none">
+      <div class="absolute -top-32 -right-20 h-96 w-96 rounded-full bg-sky-500/20 blur-[140px]"></div>
+      <div class="absolute bottom-0 left-[-80px] h-[420px] w-[420px] rounded-full bg-indigo-500/20 blur-[180px]"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(14,165,233,0.15),transparent_45%)]"></div>
+    </div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+      <header class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="space-y-4">
+          <p class="text-xs uppercase tracking-[0.4em] text-slate-400">Concept Surface 02</p>
+          <h1 class="font-display text-4xl sm:text-5xl font-semibold">Alexandria Adaptive Gallery</h1>
+          <p class="text-base text-slate-300 max-w-2xl">
+            A second experimental composition mixing shadcn-inspired cards, analytics tiles, and a split
+            layout so stakeholders can imagine future versions of the public catalog.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <a
+            href="{{ url_for('index') }}"
+            class="inline-flex items-center rounded-2xl border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-200 hover:border-white/30"
+            >Classic View</a
+          >
+          <a
+            href="{{ url_for('new_looks') }}"
+            class="inline-flex items-center rounded-2xl border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-200 hover:border-white/30"
+            >Concept 01</a
+          >
+          <a
+            href="{{ url_for('login') }}"
+            class="inline-flex items-center rounded-2xl bg-white text-slate-900 px-5 py-2.5 text-sm font-semibold shadow-card"
+            >Staff Login</a
+          >
+        </div>
+      </header>
+
+      <form method="get" class="grid gap-4 lg:grid-cols-[2.5fr_1fr_auto] items-end">
+        <label class="flex flex-col gap-2 relative">
+          <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Search catalog</span>
+          <input
+            id="search-input"
+            type="search"
+            name="q"
+            value="{{ query }}"
+            autocomplete="off"
+            placeholder="Try a product name, e.g. Dreambox"
+            class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-slate-500 focus:border-accent focus:ring-2 focus:ring-accent/50"
+          />
+          <div
+            id="suggestions"
+            class="absolute left-0 right-0 top-[82px] z-20 hidden rounded-2xl border border-white/10 bg-panel/95 shadow-card backdrop-blur"
+          >
+            <div class="p-3 text-xs uppercase tracking-[0.2em] text-slate-500">Suggestions</div>
+            <ul id="suggestion-list" class="divide-y divide-white/5"></ul>
+          </div>
+        </label>
+        <label class="flex flex-col gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Tag</span>
+          <select
+            name="tag"
+            class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white focus:border-accent focus:ring-2 focus:ring-accent/50"
+          >
+            <option value="" {% if not tag %}selected{% endif %}>All tags</option>
+            {% for t in all_tags %}
+            <option value="{{ t }}" {% if tag == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <div class="flex gap-3">
+          <button
+            type="submit"
+            class="flex-1 rounded-2xl bg-white text-slate-900 px-5 py-3 text-sm font-semibold shadow-card hover:bg-slate-100"
+          >
+            Apply
+          </button>
+          <a
+            href="{{ url_for('new_looks_v2') }}"
+            class="rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-slate-200 hover:border-white/30"
+            >Reset</a
+          >
+        </div>
+      </form>
+
+      <section class="grid gap-4 lg:grid-cols-[280px_1fr]">
+        <aside class="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+          <div class="space-y-6">
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-400">Status pulse</p>
+              <ul class="mt-3 space-y-2">
+                {% for label, count in status_counts %}
+                <li class="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 px-3 py-2 text-sm">
+                  <span class="font-medium text-white/90">{{ label }}</span>
+                  <span class="text-slate-300">{{ count }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-400">SOPPA mix</p>
+              <div class="mt-3 space-y-2">
+                {% for label, count in compliance_counts %}
+                <div class="rounded-2xl border border-white/5 bg-white/5 px-3 py-2">
+                  <p class="text-sm font-medium text-slate-200">{{ label }}</p>
+                  <p class="text-xs text-slate-400">{{ count }} apps</p>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% if popular_tags %}
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-400">Popular tags</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                {% for tag_name, tag_count in popular_tags %}
+                <span class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
+                  {{ tag_name }}
+                  <span class="text-slate-400">({{ tag_count }})</span>
+                </span>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </aside>
+
+        <div class="space-y-8">
+          <div class="rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-6 shadow-card backdrop-blur">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p class="text-sm text-slate-300">Live slice</p>
+                <p class="text-3xl font-display">{{ apps|length }} public-ready apps</p>
+              </div>
+              <div class="flex flex-wrap gap-3 text-xs text-slate-300">
+                <span class="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2">
+                  <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Data synced nightly
+                </span>
+                <span class="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2">
+                  <span class="h-2 w-2 rounded-full bg-accent"></span>
+                  Experimental shell
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {% if not apps %}
+          <div class="rounded-3xl border border-white/10 bg-white/5 p-10 text-center">
+            <p class="text-lg font-semibold">No results right now.</p>
+            <p class="text-sm text-slate-400 mt-2">Adjust the filters or clear the search.</p>
+          </div>
+          {% else %}
+          <div class="grid gap-6 xl:grid-cols-2">
+            {% for app in apps %}
+            {% set status = app[8] or 'Uncategorized' %}
+            {% set soppa = app[5] or 'Unknown' %}
+            {% set badge_palette = {
+              'Approved for Use': 'bg-emerald-500/15 text-emerald-200 border border-emerald-400/40',
+              'Core Tool': 'bg-emerald-600/20 text-emerald-100 border border-emerald-500/40',
+              'Supplemental Tool': 'bg-indigo-500/20 text-indigo-100 border border-indigo-400/40',
+              'Use Alternate': 'bg-amber-500/20 text-amber-100 border border-amber-400/40',
+              'Pending': 'bg-amber-400/20 text-amber-100 border border-amber-300/40',
+              'Reviewed & Denied': 'bg-rose-600/20 text-rose-100 border border-rose-500/40',
+              'Not Supported by District': 'bg-rose-600/15 text-rose-100 border border-rose-400/40'
+            } %}
+            {% set status_class = badge_palette.get(status, 'bg-white/10 text-white border border-white/20') %}
+            {% set soppa_palette = {
+              'Compliant': 'bg-emerald-400/15 text-emerald-100 border border-emerald-300/40',
+              'Policies are SOPPA compliant': 'bg-emerald-400/15 text-emerald-100 border border-emerald-300/40',
+              'Staff use only': 'bg-blue-500/15 text-blue-100 border border-blue-400/40',
+              'Not fully SOPPA compliant': 'bg-amber-500/15 text-amber-100 border border-amber-400/40',
+              'Noncompliant': 'bg-rose-500/15 text-rose-100 border border-rose-400/40',
+              'Parent consent required': 'bg-purple-500/15 text-purple-100 border border-purple-400/40'
+            } %}
+            {% set soppa_class = soppa_palette.get(soppa, 'bg-slate-500/20 text-slate-100 border border-slate-400/30') %}
+            {% set logo_src = None %}
+            {% if app[11] %}
+              {% if app[11].startswith('/static/') or app[11].startswith('http') %}
+                {% set logo_src = app[11] %}
+              {% else %}
+                {% set logo_src = '/static/' + app[11] %}
+              {% endif %}
+            {% endif %}
+            <article class="rounded-3xl border border-white/10 bg-panel/80 p-6 shadow-card backdrop-blur">
+              <div class="flex items-start gap-4">
+                <div class="h-16 w-16 flex items-center justify-center rounded-2xl bg-white/10 text-xl font-semibold text-white">
+                  {% if logo_src %}
+                  <img src="{{ logo_src }}" alt="{{ app[1] }}" class="h-12 w-12 object-contain" />
+                  {% else %}
+                  <span>{{ app[1][:1] }}</span>
+                  {% endif %}
+                </div>
+                <div class="flex-1 min-w-0 space-y-2">
+                  <div class="flex flex-wrap gap-2 text-xs">
+                    <span class="inline-flex items-center rounded-full px-3 py-1 font-semibold {{ status_class }}">{{ status }}</span>
+                    <span class="inline-flex items-center rounded-full px-3 py-1 font-semibold {{ soppa_class }}">{{ soppa }}</span>
+                  </div>
+                  <div>
+                    <h3 class="font-display text-2xl leading-tight">{{ app[1] }}</h3>
+                    <p class="text-sm text-slate-400" title="{{ app[3] or 'Unknown vendor' }}">{{ app[3] or 'Unknown vendor' }}</p>
+                  </div>
+                </div>
+              </div>
+              {% if app[2] %}
+              <p class="mt-4 text-sm text-slate-300 clamped">{{ app[2] }}</p>
+              {% endif %}
+              <div class="mt-5 grid gap-3 text-sm text-slate-200">
+                <div class="flex flex-wrap gap-2">
+                  {% if app[4] %}
+                  <a href="{{ app[4] }}" target="_blank" class="inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1">Privacy</a>
+                  {% endif %}
+                  {% if app[6] %}
+                  <a href="{{ app[6] }}" target="_blank" class="inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1">Exhibit E</a>
+                  {% endif %}
+                  {% if app[7] %}
+                  {% for invoice in app[7].split(',') if invoice.strip() %}
+                  {% if loop.index <= 2 %}
+                  <a href="{{ invoice.strip() }}" target="_blank" class="inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1">Invoice {{ loop.index }}</a>
+                  {% endif %}
+                  {% endfor %}
+                  {% if app[7].split(',')|length > 2 %}
+                  <span class="inline-flex items-center rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">+{{ app[7].split(',')|length - 2 }} more</span>
+                  {% endif %}
+                  {% endif %}
+                </div>
+                {% if app[9] %}
+                <div class="flex flex-wrap gap-2 text-xs text-slate-300">
+                  {% for chip in app[9].split(',') if chip.strip() %}
+                  <span class="rounded-full border border-white/5 bg-white/5 px-3 py-1">{{ chip.strip() }}</span>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              <div class="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+                <span>ID #{{ app[0] }}</span>
+                {% if app[10] == 1 %}
+                <span class="inline-flex items-center gap-2 rounded-full border border-emerald-400/40 px-3 py-1 text-emerald-200">Publicly visible</span>
+                {% else %}
+                <span class="inline-flex items-center gap-2 rounded-full border border-slate-500 px-3 py-1">Hidden</span>
+                {% endif %}
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+
+          <section class="rounded-3xl border border-white/10 bg-white/5 p-6">
+            <div class="flex items-center justify-between">
+              <h2 class="font-display text-2xl">Condensed board</h2>
+              <p class="text-sm text-slate-400">High-level pass for fast reviews</p>
+            </div>
+            <div class="mt-5 overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="text-left text-slate-400">
+                  <tr>
+                    <th class="py-2 pr-4">Application</th>
+                    <th class="py-2 pr-4">Status</th>
+                    <th class="py-2 pr-4">SOPPA</th>
+                    <th class="py-2 pr-4">Tags</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/10">
+                  {% for app in apps[:10] %}
+                  <tr>
+                    <td class="py-3 pr-4">
+                      <p class="font-medium text-white">{{ app[1] }}</p>
+                      <p class="text-xs text-slate-400">{{ app[3] or 'Unknown vendor' }}</p>
+                    </td>
+                    <td class="py-3 pr-4 text-slate-200">{{ app[8] or 'Uncategorized' }}</td>
+                    <td class="py-3 pr-4 text-slate-200">{{ app[5] or 'Unknown' }}</td>
+                    <td class="py-3 pr-4 text-slate-400">{{ app[9] or '—' }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          {% endif %}
+        </div>
+      </section>
+
+      <footer class="border-t border-white/10 py-6 text-sm text-slate-500 text-center">
+        Concept preview · Tailwind/shadcn homage · {{ apps|length }} records rendered
+      </footer>
+    </div>
+
+    <script>
+      const appTuples = JSON.parse(`{{ apps|tojson }}`);
+      const appIndex = (appTuples || []).map((row) => ({
+        name: row[1] || '',
+        vendor: row[3] || 'Unknown vendor',
+        tags: row[9] || ''
+      }));
+      const popularTagTuples = JSON.parse(`{{ popular_tags|default([], true)|tojson }}`);
+
+      const searchInput = document.getElementById('search-input');
+      const suggestionContainer = document.getElementById('suggestions');
+      const suggestionList = document.getElementById('suggestion-list');
+
+      const normalizedPool = (() => {
+        const items = [];
+        appIndex.forEach((entry) => {
+          items.push({ type: 'App', label: entry.name, hint: entry.vendor });
+          entry.tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+            .forEach((tag) => items.push({ type: 'Tag', label: tag, hint: 'Tag' }));
+        });
+        (popularTagTuples || []).forEach((row) => {
+          const [label, count] = row;
+          items.push({ type: 'Popular Tag', label, hint: `${count} uses` });
+        });
+        const seen = new Set();
+        return items.filter((item) => {
+          const key = `${item.type}:${item.label.toLowerCase()}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      })();
+
+      function renderSuggestions(matches) {
+        if (!suggestionList || !suggestionContainer) return;
+        if (!matches.length) {
+          suggestionContainer.classList.add('hidden');
+          return;
+        }
+        suggestionList.innerHTML = matches
+          .map(
+            (item) => `
+              <li>
+                <button
+                  type="button"
+                  class="flex w-full items-center justify-between px-4 py-2 text-left text-sm hover:bg-white/5"
+                  data-type="${item.type}"
+                  data-label="${item.label}"
+                >
+                  <span class="flex flex-col">
+                    <span class="text-white">${item.label}</span>
+                    <span class="text-xs text-slate-500">${item.type}${item.hint ? ' · ' + item.hint : ''}</span>
+                  </span>
+                  <span class="text-[10px] uppercase tracking-[0.2em] text-slate-500">Use</span>
+                </button>
+              </li>
+            `
+          )
+          .join('');
+        suggestionContainer.classList.remove('hidden');
+      }
+
+      function handleSuggest(query) {
+        const needle = query.trim().toLowerCase();
+        if (!needle) {
+          suggestionContainer.classList.add('hidden');
+          return;
+        }
+        const matches = normalizedPool
+          .filter((item) => item.label.toLowerCase().includes(needle))
+          .slice(0, 7);
+        renderSuggestions(matches);
+      }
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => handleSuggest(e.target.value));
+      }
+
+      if (suggestionList && suggestionContainer) {
+        suggestionList.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-label]');
+          if (!btn || !searchInput) return;
+          const label = btn.dataset.label;
+          const type = btn.dataset.type;
+          searchInput.value = label;
+          suggestionContainer.classList.add('hidden');
+          if (type.includes('Tag')) {
+            const tagSelect = document.querySelector('select[name="tag"]');
+            if (tagSelect) {
+              const option = Array.from(tagSelect.options).find((o) => o.value === label);
+              if (option) {
+                tagSelect.value = label;
+              }
+            }
+          }
+        });
+
+        document.addEventListener('click', (e) => {
+          const within = suggestionContainer.contains(e.target) || searchInput.contains(e.target);
+          if (!within) suggestionContainer.classList.add('hidden');
+        });
+      }
+
+    </script>
+  </body>
+</html>

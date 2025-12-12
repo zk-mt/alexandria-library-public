@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alexandria — Application Requests</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              background: '#0B1221',
+              surface: '#0F162A',
+              border: '#1F2A44',
+              muted: '#94A3B8',
+              primary: '#3B82F6',
+              primaryDark: '#1D4ED8',
+              success: '#10B981',
+              warning: '#F59E0B',
+              danger: '#EF4444',
+            },
+            boxShadow: {
+              soft: '0 8px 30px rgba(0, 0, 0, 0.3)',
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-background text-slate-100">
+    <div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <header class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1">
+          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Admin</p>
+          <h1 class="text-3xl font-bold text-white">Application Requests</h1>
+          <p class="text-slate-400"
+            >Review and triage new app requests from staff.</p
+          >
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <a
+            href="{{ url_for('admin_apps_list') }}"
+            class="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-slate-200 hover:border-slate-500 hover:bg-slate-900 transition"
+          >
+            <span>📚</span> Apps
+          </a>
+          <a
+            href="{{ url_for('admin_activity_log') }}"
+            class="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-slate-200 hover:border-slate-500 hover:bg-slate-900 transition"
+          >
+            <span>📊</span> Activity log
+          </a>
+          <a
+            href="{{ url_for('redirect_choice') }}"
+            class="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-slate-200 hover:border-slate-500 hover:bg-slate-900 transition"
+          >
+            <span>🏠</span> Admin home
+          </a>
+        </div>
+      </header>
+
+      {% set total_requests = requests|length %} {% set latest = requests[0][1]
+      if requests and requests[0][1] else None %}
+
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div
+          class="rounded-2xl border border-border/60 bg-surface p-4 shadow-soft flex items-center justify-between"
+        >
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400"
+              >Total requests</p
+            >
+            <p class="text-2xl font-semibold text-white"
+              >{{ total_requests }}</p
+            >
+          </div>
+          <div class="text-primary text-xl">📥</div>
+        </div>
+        <div
+          class="rounded-2xl border border-border/60 bg-surface p-4 shadow-soft flex items-center justify-between"
+        >
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400"
+              >Latest submission</p
+            >
+            <p class="text-2xl font-semibold text-white"
+              >{{ latest.strftime('%b %d, %Y') if latest else '—' }}</p
+            >
+          </div>
+          <div class="text-warning text-xl">⏱️</div>
+        </div>
+        <div
+          class="rounded-2xl border border-border/60 bg-surface p-4 shadow-soft flex items-center justify-between"
+        >
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400"
+              >Ready to convert</p
+            >
+            <p class="text-2xl font-semibold text-white"
+              >{{ total_requests }}</p
+            >
+          </div>
+          <div class="text-success text-xl">🚀</div>
+        </div>
+      </section>
+
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %}
+      <div class="space-y-2">
+        {% for category, message in messages %}
+        <div
+          class="rounded-xl border border-border/70 bg-surface px-4 py-3 text-sm font-medium text-slate-100 shadow-soft"
+        >
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %}
+
+      <section
+        class="rounded-2xl border border-border/60 bg-surface p-4 shadow-soft space-y-4"
+      >
+        <div
+          class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+        >
+          <div class="flex flex-1 items-center gap-3">
+            <div class="relative w-full max-w-xl">
+              <span
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+                >🔍</span
+              >
+              <input
+                id="search"
+                type="search"
+                placeholder="Search by app, staff, or building..."
+                class="w-full rounded-lg border border-border bg-transparent pl-10 pr-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-primary focus:ring-2 focus:ring-primary/40 outline-none"
+              />
+            </div>
+          </div>
+          <div class="text-sm text-slate-400"
+            >{{ total_requests }} request{{ 's' if total_requests != 1 else ''
+            }} in view</div
+          >
+        </div>
+
+        {% if requests %}
+        <div id="requestsGrid" class="grid gap-3">
+          {% for req in requests %}
+          <article
+            class="rounded-2xl border border-border/60 bg-background/50 p-4 hover:border-primary/60 transition"
+            data-name="{{ (req[4] or '')|lower }}"
+            data-staff="{{ (req[2] or '')|lower }}"
+            data-building="{{ (req[3] or '')|lower }}"
+          >
+            <div
+              class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"
+            >
+              <div class="space-y-1">
+                <h3 class="text-lg font-semibold text-white"
+                  >{{ req[4] or 'Unnamed Application' }}</h3
+                >
+                <p class="text-sm text-slate-400"
+                  >Submitted {{ req[1].strftime('%b %d, %Y at %I:%M %p') if
+                  req[1] else 'N/A' }} by {{ req[2] or 'Unknown' }}</p
+                >
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  data-index="{{ loop.index0 }}"
+                  class="view-btn inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-white hover:border-primary hover:text-primary transition"
+                  >👁️ View</button
+                >
+                <a
+                  href="{{ url_for('admin_create_app', name=req[4], request_id=req[0]) }}"
+                  class="inline-flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20 transition"
+                  >➕ Add App</a
+                >
+              </div>
+            </div>
+
+            <div
+              class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-slate-300"
+            >
+              <div
+                class="rounded-lg border border-border/60 bg-surface/60 px-3 py-2"
+              >
+                <p class="text-xs uppercase tracking-wide text-slate-500"
+                  >Building</p
+                >
+                <p class="text-white">{{ req[3] or '—' }}</p>
+              </div>
+              <div
+                class="rounded-lg border border-border/60 bg-surface/60 px-3 py-2"
+              >
+                <p class="text-xs uppercase tracking-wide text-slate-500"
+                  >Grade / Subject</p
+                >
+                <p class="text-white">{{ req[5] or '—' }}</p>
+              </div>
+              <div
+                class="rounded-lg border border-border/60 bg-surface/60 px-3 py-2"
+              >
+                <p class="text-xs uppercase tracking-wide text-slate-500"
+                  >Curriculum Gap</p
+                >
+                <p class="text-white"
+                  >{{ (req[6][:80] + '...') if req[6] and req[6]|length > 80
+                  else (req[6] or '—') }}</p
+                >
+              </div>
+            </div>
+          </article>
+
+          <div
+            id="detail-data-{{ loop.index0 }}"
+            class="hidden"
+            data-app-name="{{ req[4] or 'N/A' }}"
+            data-timestamp="{{ req[1].strftime('%B %d, %Y at %I:%M %p') if req[1] else 'N/A' }}"
+            data-staff-name="{{ req[2] or 'N/A' }}"
+            data-building="{{ req[3] or 'N/A' }}"
+            data-grade-subject="{{ req[5] or 'N/A' }}"
+            data-curriculum-gap="{{ req[6] or 'N/A' }}"
+            data-existing-apps="{{ req[7] or 'N/A' }}"
+            data-improvement="{{ req[8] or 'N/A' }}"
+            data-account-needs="{{ req[9] or 'N/A' }}"
+            data-cost="{{ req[10] or 'N/A' }}"
+            data-considerations="{{ req[11] or 'N/A' }}"
+            data-privacy-personnel="{{ req[12] or 'N/A' }}"
+            data-privacy-link="{{ req[13] or '' }}"
+          ></div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div
+          class="rounded-2xl border border-border/60 bg-surface p-8 text-center shadow-soft"
+        >
+          <div class="text-3xl mb-3">📭</div>
+          <h2 class="text-xl font-semibold text-white">No requests yet</h2>
+          <p class="text-slate-400 mt-2"
+            >New requests from the Google Form will appear here.</p
+          >
+        </div>
+        {% endif %}
+      </section>
+    </div>
+
+    <div
+      id="detailModal"
+      class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+    >
+      <div
+        class="w-full max-w-4xl rounded-2xl border border-border bg-surface shadow-soft overflow-hidden"
+      >
+        <div
+          class="flex items-center justify-between border-b border-border px-6 py-4"
+        >
+          <div>
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-400"
+              >Request</p
+            >
+            <h2 class="text-xl font-semibold text-white" id="modal-app-name"
+              >Request Details</h2
+            >
+          </div>
+          <button
+            class="rounded-full p-2 text-slate-400 hover:text-white transition"
+            onclick="closeModal()"
+            >✕</button
+          >
+        </div>
+        <div class="px-6 py-4 space-y-6 max-h-[70vh] overflow-y-auto">
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              class="rounded-lg border border-border/60 bg-background/50 p-3"
+            >
+              <p class="text-xs uppercase tracking-wide text-slate-500"
+                >Submitted</p
+              >
+              <p class="text-white" id="modal-timestamp"></p>
+            </div>
+            <div
+              class="rounded-lg border border-border/60 bg-background/50 p-3"
+            >
+              <p class="text-xs uppercase tracking-wide text-slate-500"
+                >Requested By</p
+              >
+              <p class="text-white" id="modal-staff-name"></p>
+            </div>
+            <div
+              class="rounded-lg border border-border/60 bg-background/50 p-3"
+            >
+              <p class="text-xs uppercase tracking-wide text-slate-500"
+                >Building</p
+              >
+              <p class="text-white" id="modal-building"></p>
+            </div>
+            <div
+              class="rounded-lg border border-border/60 bg-background/50 p-3"
+            >
+              <p class="text-xs uppercase tracking-wide text-slate-500"
+                >Grade / Subject</p
+              >
+              <p class="text-white" id="modal-grade-subject"></p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <h3 class="text-sm font-semibold text-white">Curriculum Need</h3>
+            <div
+              class="rounded-lg border border-border/60 bg-background/50 p-4 text-slate-200"
+              id="modal-curriculum-gap"
+            ></div>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="space-y-2">
+              <p class="text-xs uppercase tracking-wide text-slate-500"
+                >Existing Apps</p
+              >
+              <div
+                class="rounded-lg border border-border/60 bg-background/50 p-3 text-slate-200"
+                id="modal-existing-apps"
+              ></div>
+            </div>
+            <div class="space-y-2">
+              <p class="text-xs uppercase tracking-wide text-slate-500"
+                >Improvement Over Existing</p
+              >
+              <div
+                class="rounded-lg border border-border/60 bg-background/50 p-3 text-slate-200"
+                id="modal-improvement"
+              ></div>
+            </div>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="space-y-2">
+              <p class="text-xs uppercase tracking-wide text-slate-500"
+                >Account Needs</p
+              >
+              <div
+                class="rounded-lg border border-border/60 bg-background/50 p-3 text-slate-200"
+                id="modal-account-needs"
+              ></div>
+            </div>
+            <div class="space-y-2">
+              <p class="text-xs uppercase tracking-wide text-slate-500">Cost</p>
+              <div
+                class="rounded-lg border border-border/60 bg-background/50 p-3 text-slate-200"
+                id="modal-cost"
+              ></div>
+            </div>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="space-y-2">
+              <p class="text-xs uppercase tracking-wide text-slate-500"
+                >Privacy Review Personnel</p
+              >
+              <div
+                class="rounded-lg border border-border/60 bg-background/50 p-3 text-slate-200"
+                id="modal-privacy-personnel"
+              ></div>
+            </div>
+            <div class="space-y-2">
+              <p class="text-xs uppercase tracking-wide text-slate-500"
+                >Privacy Policy Link</p
+              >
+              <div
+                class="rounded-lg border border-border/60 bg-background/50 p-3 text-slate-200"
+                id="modal-privacy-link"
+              ></div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <p class="text-xs uppercase tracking-wide text-slate-500"
+              >Special Considerations</p
+            >
+            <div
+              class="rounded-lg border border-border/60 bg-background/50 p-3 text-slate-200"
+              id="modal-considerations"
+            ></div>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 border-t border-border px-6 py-4">
+          <button
+            class="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-slate-200 hover:border-slate-500 transition"
+            onclick="closeModal()"
+            >Close</button
+          >
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const searchInput = document.getElementById('search');
+      const requestCards = Array.from(
+        document.querySelectorAll('#requestsGrid article')
+      );
+      const viewButtons = Array.from(document.querySelectorAll('.view-btn'));
+
+      function applyRequestFilter() {
+        const q = (searchInput?.value || '').trim().toLowerCase();
+        requestCards.forEach((card) => {
+          const name = card.dataset.name || '';
+          const staff = card.dataset.staff || '';
+          const building = card.dataset.building || '';
+          const matches =
+            !q || name.includes(q) || staff.includes(q) || building.includes(q);
+          card.style.display = matches ? '' : 'none';
+        });
+      }
+
+      searchInput?.addEventListener('input', applyRequestFilter);
+      viewButtons.forEach((btn) => {
+        btn.addEventListener('click', () => viewDetails(btn.dataset.index));
+      });
+
+      function viewDetails(index) {
+        const dataEl = document.getElementById('detail-data-' + index);
+        if (!dataEl) return;
+
+        const textFields = [
+          ['modal-timestamp', 'timestamp'],
+          ['modal-staff-name', 'staffName'],
+          ['modal-building', 'building'],
+          ['modal-grade-subject', 'gradeSubject'],
+          ['modal-curriculum-gap', 'curriculumGap'],
+          ['modal-existing-apps', 'existingApps'],
+          ['modal-improvement', 'improvement'],
+          ['modal-account-needs', 'accountNeeds'],
+          ['modal-cost', 'cost'],
+          ['modal-considerations', 'considerations'],
+          ['modal-privacy-personnel', 'privacyPersonnel'],
+        ];
+
+        document.getElementById('modal-app-name').textContent =
+          dataEl.dataset.appName;
+        textFields.forEach(([id, key]) => {
+          const el = document.getElementById(id);
+          el.textContent = dataEl.dataset[key] || 'N/A';
+        });
+
+        const privacyLink = dataEl.dataset.privacyLink;
+        const privacyLinkEl = document.getElementById('modal-privacy-link');
+        if (privacyLink && privacyLink.trim() !== '' && privacyLink !== 'N/A') {
+          privacyLinkEl.innerHTML =
+            '<a class="text-primary hover:underline" href="' +
+            privacyLink +
+            '" target="_blank">' +
+            privacyLink +
+            '</a>';
+        } else {
+          privacyLinkEl.textContent = 'N/A';
+        }
+
+        document.getElementById('detailModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeModal() {
+        document.getElementById('detailModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+      }
+
+      document.getElementById('detailModal').addEventListener('click', (e) => {
+        if (e.target.id === 'detailModal') closeModal();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+      });
+    </script>
+  </body>
+</html>

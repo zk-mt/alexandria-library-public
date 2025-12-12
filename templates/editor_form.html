@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Alexandria — Edit App</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      
+      :root {
+        --primary: #2563eb;
+        --primary-hover: #1d4ed8;
+        --surface: #ffffff;
+        --background: #f8fafc;
+        --border: #e2e8f0;
+        --text-primary: #0f172a;
+        --text-secondary: #64748b;
+        --text-muted: #94a3b8;
+        --success: #10b981;
+        --success-bg: #ecfdf5;
+        --danger: #ef4444;
+        --danger-hover: #dc2626;
+        --info: #0ea5e9;
+        --info-bg: #f0f9ff;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+        --shadow-lg: 0 10px 25px rgba(0,0,0,0.05), 0 4px 10px rgba(0,0,0,0.05);
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+        background: var(--background);
+        color: var(--text-primary);
+        line-height: 1.6;
+        padding: 2rem 1rem;
+        -webkit-font-smoothing: antialiased;
+      }
+      
+      .container { max-width: 1000px; margin: 0 auto; }
+      
+      .header {
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-sm);
+        transition: all 0.2s;
+      }
+      
+      .back-link:hover {
+        background: var(--surface);
+        color: var(--primary);
+      }
+      
+      h1 {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.025em;
+      }
+      
+      .form-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+      }
+      
+      .form-content {
+        padding: 2rem;
+      }
+      
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+      }
+      
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      
+      .form-group.full {
+        grid-column: 1 / -1;
+      }
+      
+      label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        letter-spacing: -0.01em;
+      }
+      
+      input[type="text"],
+      input[type="url"],
+      textarea,
+      select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 0.9375rem;
+        color: var(--text-primary);
+        background: var(--surface);
+        transition: all 0.2s;
+        font-family: inherit;
+      }
+      
+      input[type="text"]:focus,
+      input[type="url"]:focus,
+      textarea:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      
+      input[type="text"]::placeholder,
+      input[type="url"]::placeholder,
+      textarea::placeholder {
+        color: var(--text-muted);
+      }
+      
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+      
+      select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 6L8 9.5 11.5 6z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        padding-right: 2.5rem;
+      }
+      
+      .file-upload-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      
+      .current-file {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 0.8125rem;
+      }
+      
+      .current-file a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .current-file a:hover {
+        text-decoration: underline;
+      }
+      
+      .file-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.625rem;
+        border-radius: 9999px;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+      }
+      
+      .file-badge.google {
+        background: var(--info-bg);
+        color: var(--info);
+      }
+      
+      .file-badge.local {
+        background: var(--success-bg);
+        color: var(--success);
+      }
+      
+      .delete-file-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        border: none;
+        background: var(--danger);
+        color: white;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: bold;
+        line-height: 1;
+        transition: all 0.2s;
+        padding: 0;
+        margin-left: auto;
+      }
+      
+      .delete-file-btn:hover {
+        background: var(--danger-hover);
+        transform: scale(1.1);
+      }
+      
+      input[type="file"] {
+        width: 100%;
+        padding: 0.625rem 1rem;
+        border: 1.5px dashed var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      input[type="file"]:hover {
+        border-color: var(--primary);
+        background: rgba(37, 99, 235, 0.02);
+      }
+      
+      .field-hint {
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+      }
+      
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: var(--background);
+        border-radius: var(--radius-sm);
+      }
+      
+      input[type="checkbox"] {
+        width: 1.25rem;
+        height: 1.25rem;
+        cursor: pointer;
+        accent-color: var(--primary);
+      }
+      
+      .checkbox-group label {
+        cursor: pointer;
+        margin: 0;
+        font-weight: 500;
+      }
+      
+      .form-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem 2rem;
+        background: var(--background);
+        border-top: 1px solid var(--border);
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      
+      .button-group {
+        display: flex;
+        gap: 0.75rem;
+      }
+      
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.625rem 1.5rem;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        border-radius: var(--radius-sm);
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+      }
+      
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      
+      .btn-primary:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      }
+      
+      .btn-secondary {
+        background: var(--surface);
+        color: var(--text-primary);
+        border: 1.5px solid var(--border);
+      }
+      
+      .btn-secondary:hover {
+        background: var(--background);
+        border-color: var(--text-secondary);
+      }
+      
+      .btn-danger {
+        background: var(--danger);
+        color: white;
+        border: none;
+      }
+      
+      .btn-danger:hover {
+        background: var(--danger-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+      }
+      
+      @media (max-width: 768px) {
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+        
+        .form-content {
+          padding: 1.5rem;
+        }
+        
+        .form-footer {
+          padding: 1.25rem 1.5rem;
+          flex-direction: column;
+          align-items: stretch;
+        }
+        
+        .button-group {
+          width: 100%;
+        }
+        
+        .btn {
+          flex: 1;
+        }
+      }
+    </style>
+    <link rel="apple-touch-icon" sizes="180x180" href="static/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="static/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="static/favicon-16x16.png" />
+    <link rel="manifest" href="static/site.webmanifest" />
+  </head>
+  <body>
+    <main class="container">
+      <div class="header">
+        <a href="/admin/apps" class="back-link">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Back to Apps
+        </a>
+        <h1>{% if is_new %}Add New App{% else %}Edit "{{ app_record.name }}"{% endif %}</h1>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+        <div class="form-content">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="name">App Name *</label>
+              <input id="name" type="text" name="name" value="{{ app_record.name }}" required />
+            </div>
+
+            <div class="form-group">
+              <label for="company">Company</label>
+              <input id="company" type="text" name="company" value="{{ app_record.company }}" />
+            </div>
+
+            <div class="form-group">
+              <label for="status">Approval Status</label>
+              <select id="status" name="status">
+                {% for s in STATUSES %}
+                  <option value="{{ s }}" {% if s == app_record.status %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="soppa_compliant">SOPPA Compliance</label>
+              <select id="soppa_compliant" name="soppa_compliant">
+                {% for s in SOPPA_STATUSES %}
+                  <option value="{{ s }}" {% if s == app_record.soppa_compliant %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="privacy_link">NDPA (Privacy Agreement)</label>
+              <div class="file-upload-section">
+                {% if app_record.privacy_link %}
+                  <div class="current-file">
+                    <a href="{{ app_record.privacy_link }}" target="_blank">View current file</a>
+                    {% if 'drive.google.com' in app_record.privacy_link %}
+                      <span class="file-badge google">Google Drive</span>
+                    {% else %}
+                      <span class="file-badge local">Local</span>
+                    {% endif %}
+                  </div>
+                {% endif %}
+                <input id="privacy_link" type="text" name="privacy_link" value="{{ app_record.privacy_link }}" placeholder="https://drive.google.com/..." />
+                <input type="file" name="privacy_link_file" accept=".pdf,.doc,.docx" />
+                <span class="field-hint">Upload a new file or paste a Google Drive link</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="otherdocs">Exhibit E Document</label>
+              <div class="file-upload-section">
+                {% if app_record.otherdocs %}
+                  <div class="current-file">
+                    <a href="{{ app_record.otherdocs }}" target="_blank">View current file</a>
+                    {% if 'drive.google.com' in app_record.otherdocs %}
+                      <span class="file-badge google">Google Drive</span>
+                    {% else %}
+                      <span class="file-badge local">Local</span>
+                    {% endif %}
+                  </div>
+                {% endif %}
+                <input id="otherdocs" type="text" name="otherdocs" value="{{ app_record.otherdocs }}" placeholder="https://drive.google.com/..." />
+                <input type="file" name="otherdocs_file" accept=".pdf,.doc,.docx" />
+                <span class="field-hint">Upload a new file or paste a Google Drive link</span>
+              </div>
+            </div>
+
+            <div class="form-group full">
+              <label for="product_link">Product Logo</label>
+              <div class="file-upload-section">
+                {% if app_record.product_link %}
+                  <div class="current-file">
+                    <a href="{{ app_record.product_link }}" target="_blank">{{ app_record.product_link }}</a>
+                    {% if 'drive.google.com' in app_record.product_link %}
+                      <span class="file-badge google">Google Drive</span>
+                    {% else %}
+                      <span class="file-badge local">Local File</span>
+                    {% endif %}
+                  </div>
+                {% endif %}
+                <input id="product_link" type="text" name="product_link" value="{{ app_record.product_link }}" placeholder="https://..." />
+                <input type="file" name="product_link_file" accept="image/*,.pdf" />
+                <span class="field-hint">Upload a new image/PDF or paste a URL</span>
+              </div>
+            </div>
+
+            <div class="form-group full">
+              <label for="invoices">Invoices (Admin Only)</label>
+              <div class="file-upload-section">
+                {% if app_record.invoices %}
+                  {% set invoice_list = app_record.invoices.split(',') %}
+                  {% for invoice in invoice_list %}
+                    {% if invoice.strip() %}
+                      {% set invoice_filename = invoice.strip().split('/')[-1] %}
+                      <div class="current-file" data-invoice-path="{{ invoice.strip() }}">
+                        <a href="{{ url_for('serve_invoice', filename=invoice.strip()) }}" target="_blank">{{ invoice_filename }}</a>
+                        <span class="file-badge local">Invoice</span>
+                        <button type="button" class="delete-file-btn" onclick="deleteInvoice(this, '{{ invoice.strip() }}', {{ app_record.id }})" title="Remove invoice">×</button>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+                <input type="file" name="invoice_files" accept=".pdf,.doc,.docx,.xlsx,.xls" multiple />
+                <span class="field-hint">Upload multiple invoice files (Admin only - not visible to public)</span>
+              </div>
+            </div>
+
+            <div class="form-group full">
+              <label for="tags">Tags</label>
+              <input id="tags" type="text" name="tags" value="{{ app_record.tags }}" placeholder="e.g., math, reading, K-5, science" />
+              <span class="field-hint">Separate multiple tags with commas</span>
+            </div>
+
+            <div class="form-group full">
+              <label for="notes">Internal Notes</label>
+              <textarea id="notes" name="notes" placeholder="Add any internal notes or comments about this app...">{{ app_record.notes }}</textarea>
+            </div>
+
+            <div class="form-group full">
+              <div class="checkbox-group">
+                <input id="product_visibility" type="checkbox" name="product_visibility" {% if app_record.product_visibility %}checked{% endif %} />
+                <label for="product_visibility">Show this app on the public page</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 1rem; flex-wrap: wrap;">
+            <div>
+              {% if not is_new %}
+                <button type="button" class="btn btn-danger" onclick="deleteApp({{ app_record.id }}, '{{ app_record.name }}')" title="Delete this app">
+                  Delete App
+                </button>
+              {% endif %}
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; margin-left: auto;">
+              <span class="field-hint">All changes will be saved to the database</span>
+              <div class="button-group">
+                <a href="/admin/apps" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                  {% if is_new %}Create App{% else %}Save Changes{% endif %}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </main>
+
+    <script>
+      function deleteApp(appId, appName) {
+        if (!confirm(`Are you sure you want to delete "${appName}"?\n\nThis will permanently delete:\n- The app record\n- All associated files (invoices, documents, etc.)\n\nThis action cannot be undone!`)) {
+          return;
+        }
+
+        // Double confirmation for safety
+        if (!confirm('Please confirm again: Delete this app permanently?')) {
+          return;
+        }
+
+        // Create and submit a form with CSRF token
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/apps/${appId}/delete`;
+        
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = '{{ session.csrf_token }}';
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+      }
+
+      function deleteInvoice(button, invoicePath, appId) {
+        if (!confirm('Are you sure you want to delete this invoice?')) {
+          return;
+        }
+
+        // Disable button to prevent double-clicks
+        button.disabled = true;
+        button.textContent = '...';
+
+        fetch(`/admin/apps/${appId}/delete-invoice`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            invoice_path: invoicePath,
+            csrf_token: '{{ session.csrf_token }}'
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Remove the file element from the DOM
+            const fileElement = button.closest('.current-file');
+            fileElement.style.transition = 'opacity 0.3s';
+            fileElement.style.opacity = '0';
+            setTimeout(() => fileElement.remove(), 300);
+          } else {
+            alert('Error deleting invoice: ' + (data.error || 'Unknown error'));
+            button.disabled = false;
+            button.textContent = '×';
+          }
+        })
+        .catch(error => {
+          alert('Error deleting invoice: ' + error);
+          button.disabled = false;
+          button.textContent = '×';
+        });
+      }
+    </script>
+  </body>
+</html>

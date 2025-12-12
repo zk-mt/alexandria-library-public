@@ -1,0 +1,586 @@
+{% extends "base.html" %} {% block title %}Choose destination{% endblock %} {%
+block extra_css %}
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --surface: #ffffff;
+    --surface-hover: #f8fafc;
+    --bg: #f8fafc;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --text: #0f172a;
+    --text-muted: #64748b;
+  }
+
+  body {
+    background: var(--bg);
+  }
+
+  .choice-shell {
+    min-height: 70vh;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+  }
+
+  .choice-card {
+    width: min(1100px, 100%);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  }
+
+  .choice-header {
+    text-align: center;
+    margin-bottom: 1.2rem;
+  }
+
+  .choice-header h1 {
+    margin: 0 0 0.35rem;
+    font-size: 1.5rem;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .choice-header p {
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  .choice-grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .tile {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem 0.9rem;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.18s ease, box-shadow 0.18s ease,
+      border-color 0.18s ease;
+  }
+
+  .tile:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 32px rgba(37, 99, 235, 0.12);
+    border-color: var(--border-strong);
+  }
+
+  .tile:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+  }
+
+  .tile .icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--surface-hover);
+    display: grid;
+    place-items: center;
+    font-size: 1.35rem;
+  }
+
+  .tile h2 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text);
+  }
+
+  .tile p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+
+  .modal-backdrop.active {
+    display: flex;
+  }
+
+  .modal-dialog {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    width: min(720px, 95vw);
+    padding: 1.4rem;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+  }
+
+  .modal-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .modal-head h3 {
+    margin: 0.1rem 0 0;
+    color: var(--text);
+  }
+
+  .modal-head p {
+    margin: 0.2rem 0 0;
+    color: var(--text-muted);
+  }
+
+  .close-btn {
+    border: 1px solid var(--border);
+    background: var(--surface-hover);
+    border-radius: 999px;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  .form-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  input,
+  textarea {
+    padding: 0.6rem 0.7rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface-hover);
+    font-size: 0.95rem;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  .primary {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 0.5rem;
+  }
+
+  .list-stack {
+    display: grid;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .contact {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem;
+    background: var(--surface-hover);
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.55rem;
+    background: #eef2ff;
+    color: #4338ca;
+    border-radius: 999px;
+    font-size: 0.8rem;
+  }
+
+  .link-danger {
+    color: #b91c1c;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .preview {
+    border: 1px dashed var(--border-strong);
+    border-radius: 12px;
+    padding: 0.75rem;
+    background: #f8fafc;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+  }
+
+  .app-grid {
+    display: grid;
+    gap: 0.6rem;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    margin-bottom: 0.5rem;
+  }
+
+  .app-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.8rem 0.7rem;
+    background: var(--surface-hover);
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease;
+    text-align: center;
+  }
+
+  .app-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-strong);
+  }
+
+  .app-card.active {
+    border-color: var(--primary);
+    background: #eef2ff;
+  }
+
+  .app-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .app-name {
+    margin: 0.3rem 0 0;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+
+  .vendor-view {
+    display: none;
+  }
+
+  .vendor-view.active {
+    display: block;
+  }
+
+  .vendor-header {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .vendor-header h4 {
+    margin: 0;
+    color: var(--text);
+  }
+
+  .vendor-header button {
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.4rem 0.65rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .vendor-list {
+    display: grid;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .vendor-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.65rem;
+    background: var(--surface-hover);
+  }
+
+  .vendor-item-name {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.2rem;
+  }
+
+  .vendor-item-meta {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 0.3rem;
+  }
+
+  .vendor-item-actions {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .vendor-item-actions button {
+    flex: 1;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .vendor-item-actions .edit-btn {
+    background: #eef2ff;
+    color: #4338ca;
+  }
+
+  .vendor-item-actions .delete-btn {
+    color: #b91c1c;
+    background: transparent;
+  }
+
+  .add-form {
+    display: none;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.9rem;
+    background: #f8fafc;
+  }
+
+  .add-form.active {
+    display: block;
+  }
+
+  .add-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .add-form input,
+  .add-form textarea {
+    padding: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  @media (max-width: 640px) {
+    .choice-card {
+      padding: 1.1rem;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="choice-shell">
+  <div class="choice-card">
+    <div class="choice-header">
+      <h1>Welcome, {{ user_name }}!</h1>
+      <p>Choose where to go.</p>
+    </div>
+    <div class="choice-grid">
+      <a class="tile" href="{{ url_for('admin_apps_list') }}">
+        <span class="icon">⚙️</span>
+        <h2>Admin Panel</h2>
+        <p>Manage applications and settings</p>
+      </a>
+      <a class="tile" href="{{ url_for('staff_view') }}">
+        <span class="icon">👁️</span>
+        <h2>Staff View</h2>
+        <p>Browse available applications</p>
+      </a>
+      <a class="tile" href="{{ url_for('admin_app_requests') }}">
+        <span class="icon">📥</span>
+        <h2>App Requests</h2>
+        <p>Review incoming requests</p>
+      </a>
+      <a class="tile" href="{{ url_for('admin_activity_log') }}">
+        <span class="icon">📊</span>
+        <h2>Activity Log</h2>
+        <p>View recent admin activity</p>
+      </a>
+      <a class="tile" href="{{ url_for('admin_vendor_contacts_page') }}">
+        <span class="icon">🤝</span>
+        <h2>Vendor Contacts</h2>
+        <p>Manage contact book by vendor</p>
+      </a>
+      <button class="tile" type="button" data-modal="settings">
+        <span class="icon">🛠️</span>
+        <h2>Alexandria Settings</h2>
+        <p>Adjust site-wide preferences</p>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="settings-modal">
+  <div class="modal-dialog">
+    <div class="modal-head">
+      <div>
+        <p class="eyebrow">Alexandria settings</p>
+        <h3>Site-wide controls</h3>
+        <p>Stored locally for previewing future admin controls.</p>
+      </div>
+      <button class="close-btn" data-close="settings">×</button>
+    </div>
+    <form id="settings-form">
+      <div class="form-grid">
+        <label
+          >Site title<input name="siteTitle" placeholder="Alexandria Library"
+        /></label>
+        <label
+          >Accent color<input name="accent" type="color" value="#2563eb"
+        /></label>
+        <label
+          >Footer note<input
+            name="footer"
+            placeholder="District 203 · Updated weekly"
+        /></label>
+        <label
+          style="
+            flex-direction: row;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+          "
+        >
+          <input name="maintenance" type="checkbox" />Maintenance mode banner
+        </label>
+      </div>
+      <label
+        >Broadcast banner<textarea
+          name="banner"
+          rows="2"
+          placeholder="Short banner shown to staff"
+        ></textarea>
+      </label>
+      <div class="preview" id="settings-preview"></div>
+      <button class="primary" type="submit">Save settings</button>
+    </form>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  const toggleModal = (id, show) => {
+    const el = document.getElementById(`${id}-modal`);
+    if (!el) return;
+    el.classList.toggle('active', show);
+  };
+
+  // Settings preview (local-only)
+  (() => {
+    const key = 'alexandriaSiteSettings';
+    const form = document.getElementById('settings-form');
+    const preview = document.getElementById('settings-preview');
+
+    const defaults = {
+      siteTitle: 'Alexandria Library',
+      accent: '#2563eb',
+      footer: '',
+      maintenance: false,
+      banner: '',
+    };
+    const read = () => {
+      try {
+        return {
+          ...defaults,
+          ...(JSON.parse(localStorage.getItem(key)) || {}),
+        };
+      } catch {
+        return { ...defaults };
+      }
+    };
+    const write = (data) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(data));
+      } catch {}
+    };
+
+    const paint = (s) => {
+      if (!preview) return;
+      preview.innerHTML = `
+        <div><strong>Title:</strong> ${s.siteTitle || defaults.siteTitle}</div>
+        <div><strong>Accent:</strong> ${s.accent}</div>
+        <div><strong>Footer:</strong> ${s.footer || '—'}</div>
+        <div><strong>Maintenance:</strong> ${
+          s.maintenance ? 'Enabled' : 'Off'
+        }</div>
+        <div><strong>Banner:</strong> ${s.banner || '—'}</div>
+        <p style=\"margin-top: 0.4rem; color: #64748b;\">Preview only; wire this to a backend to make it live.</p>
+      `;
+    };
+
+    const hydrate = () => {
+      if (!form) return;
+      const s = read();
+      form.siteTitle.value = s.siteTitle;
+      form.accent.value = s.accent;
+      form.footer.value = s.footer;
+      form.maintenance.checked = Boolean(s.maintenance);
+      form.banner.value = s.banner;
+      paint(s);
+    };
+
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const s = {
+        siteTitle: form.siteTitle.value.trim() || defaults.siteTitle,
+        accent: form.accent.value || defaults.accent,
+        footer: form.footer.value.trim(),
+        maintenance: form.maintenance.checked,
+        banner: form.banner.value.trim(),
+      };
+      write(s);
+      paint(s);
+    });
+
+    document
+      .querySelector('[data-modal="settings"]')
+      ?.addEventListener('click', () => {
+        hydrate();
+        toggleModal('settings', true);
+      });
+    document
+      .querySelector('[data-close="settings"]')
+      ?.addEventListener('click', () => toggleModal('settings', false));
+    document
+      .getElementById('settings-modal')
+      ?.addEventListener('click', (e) => {
+        if (e.target.id === 'settings-modal') toggleModal('settings', false);
+      });
+  })();
+</script>
+{% endblock %}

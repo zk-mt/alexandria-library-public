@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Super-dark palette (default) */
+    --background: 222 16% 7%;
+    --foreground: 210 22% 92%;
+    --card: 222 18% 9%;
+    --card-foreground: 210 22% 92%;
+    --popover: 222 18% 9%;
+    --popover-foreground: 210 22% 92%;
+    --primary: 220 90% 63%;
+    --primary-foreground: 220 100% 97%;
+    --secondary: 215 18% 16%;
+    --secondary-foreground: 210 22% 92%;
+    --muted: 215 16% 12%;
+    --muted-foreground: 215 12% 65%;
+    --accent: 285 70% 60%;
+    --accent-foreground: 220 100% 98%;
+    --destructive: 0 72% 52%;
+    --destructive-foreground: 210 22% 96%;
+    --border: 215 18% 18%;
+    --input: 215 18% 18%;
+    --ring: 220 90% 63%;
+    --radius: 0.5rem;
+    --chart-1: 221 83% 60%;
+    --chart-2: 173 70% 45%;
+    --chart-3: 35 85% 55%;
+    --chart-4: 286 65% 60%;
+    --chart-5: 345 75% 55%;
+  }
+
+  .dark {
+    /* Keep dark mode aligned with the default super-dark palette */
+    --background: 222 16% 7%;
+    --foreground: 210 22% 92%;
+    --card: 222 18% 9%;
+    --card-foreground: 210 22% 92%;
+    --popover: 222 18% 9%;
+    --popover-foreground: 210 22% 92%;
+    --primary: 220 90% 63%;
+    --primary-foreground: 220 100% 97%;
+    --secondary: 215 18% 16%;
+    --secondary-foreground: 210 22% 92%;
+    --muted: 215 16% 12%;
+    --muted-foreground: 215 12% 65%;
+    --accent: 285 70% 60%;
+    --accent-foreground: 220 100% 98%;
+    --destructive: 0 72% 52%;
+    --destructive-foreground: 210 22% 96%;
+    --border: 215 18% 18%;
+    --input: 215 18% 18%;
+    --ring: 220 90% 63%;
+    --chart-1: 221 83% 60%;
+    --chart-2: 173 70% 45%;
+    --chart-3: 35 85% 55%;
+    --chart-4: 286 65% 60%;
+    --chart-5: 345 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    font-family: 'Inter', 'Helvetica Neue', sans-serif;
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Custom scrollbar for dark mode */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-background;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+/* Smooth transitions */
+@layer utilities {
+  .transition-colors {
+    transition-property: color, background-color, border-color,
+      text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+}

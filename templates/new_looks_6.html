@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Library Apps</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%);
+        }
+        .app-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: 700;
+            font-size: 24px;
+            color: white;
+            background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(59,130,246,0.3));
+            overflow: hidden;
+        }
+        .app-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .app-card {
+            transition: transform 200ms ease, box-shadow 200ms ease;
+            background: rgba(20, 20, 35, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .app-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+            border-color: rgba(99, 102, 241, 0.4);
+            background: rgba(20, 20, 35, 1);
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-50">
+    <!-- sticky header -->
+    <div class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <h1 class="text-2xl font-bold text-white">Library Apps</h1>
+            <p class="text-sm text-slate-400 mt-1">Discover and explore curated apps</p>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- hero section with featured app -->
+        <section class="mb-12">
+            {% if featured_apps %}
+                {% set hero_app = featured_apps[0] %}
+                <div class="hero-gradient rounded-3xl p-12 text-white overflow-hidden relative">
+                    <div class="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -mr-48 -mt-48"></div>
+                    <div class="relative z-10">
+                        <div class="mb-6">
+                            {% set app_name = hero_app[1]|replace(' ', '_')|replace('(', '')|replace(')', '') %}
+                            {% set icon_found = false %}
+                            <div class="app-icon">
+                                <img src="/static/product_images/Configure {{ hero_app[1] }} for Your Organization's Library - LearnPlatform.png" alt="{{ hero_app[1] }}" onerror="this.style.display='none'; this.parentElement.textContent='{{ hero_app[1][0:1]|upper }}'">
+                            </div>
+                        </div>
+                        <h2 class="text-5xl font-bold mb-3">{{ hero_app[1] }}</h2>
+                        <p class="text-lg text-white/90 mb-6 max-w-lg">{{ hero_app[2] or 'A wonderful app for your library.' }}</p>
+                        <div class="flex gap-3 flex-wrap">
+                            {% if hero_app[11] %}
+                                <a href="{{ hero_app[11] }}" target="_blank" rel="noopener" class="px-6 py-2 rounded-lg bg-white text-indigo-600 font-semibold hover:bg-gray-100 transition">
+                                    Open
+                                </a>
+                            {% endif %}
+                            {% if hero_app[4] %}
+                                <a href="{{ hero_app[4] }}" target="_blank" rel="noopener" class="px-6 py-2 rounded-lg bg-white/20 text-white font-semibold hover:bg-white/30 transition border border-white/30">
+                                    Privacy Policy
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+
+        <!-- search section -->
+        <section class="mb-12">
+            <form method="get" action="{{ url_for('new_looks_v6') }}" id="search-form" class="space-y-4">
+                <div class="flex gap-3 flex-col sm:flex-row">
+                    <input type="search" name="q" value="{{ query }}" placeholder="Search apps..." class="flex-1 px-4 py-3 rounded-xl border border-slate-700 bg-slate-900 text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition" />
+                    <select name="soppa" onchange="document.getElementById('search-form').submit()" class="px-4 py-3 rounded-xl border border-slate-700 bg-slate-900 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition sm:w-48">
+                        <option value="">All SOPPA Status</option>
+                        <option value="yes" {% if soppa_filter == 'yes' %}selected{% endif %}>Has SOPPA Compliance</option>
+                        <option value="no" {% if soppa_filter == 'no' %}selected{% endif %}>No SOPPA Info</option>
+                    </select>
+                    <select name="privacy" onchange="document.getElementById('search-form').submit()" class="px-4 py-3 rounded-xl border border-slate-700 bg-slate-900 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition sm:w-48">
+                        <option value="">All Privacy Status</option>
+                        <option value="yes" {% if privacy_filter == 'yes' %}selected{% endif %}>Has Privacy Policy</option>
+                        <option value="no" {% if privacy_filter == 'no' %}selected{% endif %}>No Privacy Policy</option>
+                    </select>
+                    <button type="submit" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition whitespace-nowrap">
+                        Search
+                    </button>
+                </div>
+                
+                <div class="space-y-2">
+                    <p class="text-xs uppercase tracking-widest text-slate-400 font-semibold">Quick Filters</p>
+                    <div class="flex flex-wrap gap-2">
+                        <!-- SOPPA Filters -->
+                        <a href="?soppa=yes{% if query %}&q={{ query }}{% endif %}{% if privacy_filter %}&privacy={{ privacy_filter }}{% endif %}" class="px-4 py-1.5 rounded-full text-sm border border-slate-700 text-slate-300 hover:border-emerald-400 hover:text-emerald-300 transition {% if soppa_filter == 'yes' %}bg-emerald-600/30 border-emerald-500 text-emerald-200 font-medium{% endif %}">
+                            ✓ Has SOPPA
+                        </a>
+                        <a href="?soppa=no{% if query %}&q={{ query }}{% endif %}{% if privacy_filter %}&privacy={{ privacy_filter }}{% endif %}" class="px-4 py-1.5 rounded-full text-sm border border-slate-700 text-slate-300 hover:border-red-400 hover:text-red-300 transition {% if soppa_filter == 'no' %}bg-red-600/30 border-red-500 text-red-200 font-medium{% endif %}">
+                            ✗ No SOPPA
+                        </a>
+                        
+                        <!-- Privacy Filters -->
+                        <a href="?privacy=yes{% if query %}&q={{ query }}{% endif %}{% if soppa_filter %}&soppa={{ soppa_filter }}{% endif %}" class="px-4 py-1.5 rounded-full text-sm border border-slate-700 text-slate-300 hover:border-blue-400 hover:text-blue-300 transition {% if privacy_filter == 'yes' %}bg-blue-600/30 border-blue-500 text-blue-200 font-medium{% endif %}">
+                            ✓ Has Privacy
+                        </a>
+                        <a href="?privacy=no{% if query %}&q={{ query }}{% endif %}{% if soppa_filter %}&soppa={{ soppa_filter }}{% endif %}" class="px-4 py-1.5 rounded-full text-sm border border-slate-700 text-slate-300 hover:border-slate-500 hover:text-slate-200 transition {% if privacy_filter == 'no' %}bg-slate-700/30 border-slate-500 text-slate-100 font-medium{% endif %}">
+                            ✗ No Privacy
+                        </a>
+                        
+                        <!-- Clear Filters -->
+                        {% if soppa_filter or privacy_filter or query %}
+                            <a href="{{ url_for('new_looks_v6') }}" class="px-4 py-1.5 rounded-full text-sm border border-slate-700 text-slate-300 hover:border-slate-500 hover:text-slate-100 transition">
+                                ↺ Clear All
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <!-- featured apps carousel section (hide when filters applied) -->
+        {% if not query and not soppa_filter and not privacy_filter %}
+        <section class="mb-12">
+            <div class="mb-6">
+                <p class="text-xs uppercase tracking-widest text-slate-400 font-semibold">featured</p>
+                <h2 class="text-3xl font-bold text-white mt-1">Featured Apps</h2>
+            </div>
+
+            {% if featured_apps %}
+                <div class="relative overflow-hidden rounded-2xl app-card p-6" id="featured-carousel">
+                    <div class="carousel-track flex transition-transform duration-500 ease-out" style="transform: translateX(0);">
+                        {% for app in featured_apps %}
+                        <article class="flex-shrink-0 w-full">
+                            <div class="flex gap-6 items-start">
+                                <!-- app icon -->
+                                <div class="app-icon flex-shrink-0" style="width: 80px; height: 80px; font-size: 32px;">
+                                    <img src="/static/product_images/Configure {{ app[1] }} for Your Organization's Library - LearnPlatform.png" alt="{{ app[1] }}" onerror="this.style.display='none'; this.parentElement.textContent='{{ app[1][0:1]|upper }}'">
+                                </div>
+                                
+                                <!-- app details -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-start justify-between gap-4 mb-2">
+                                        <div>
+                                            <h3 class="text-2xl font-bold text-white">{{ app[1] }}</h3>
+                                            <p class="text-sm text-slate-400">{{ app[3] or 'Publisher' }}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- SOPPA & Privacy badges -->
+                                    <div class="flex flex-wrap gap-2 mb-3">
+                                        {% if app[5] %}
+                                            <span class="px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300">SOPPA: {{ app[5] }}</span>
+                                        {% else %}
+                                            <span class="px-3 py-1 rounded-lg text-xs font-semibold bg-red-500/20 text-red-300">No SOPPA Info</span>
+                                        {% endif %}
+                                        {% if app[4] %}
+                                            <span class="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-500/20 text-blue-300">Has Privacy Policy</span>
+                                        {% else %}
+                                            <span class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-700/50 text-slate-300">No Privacy Policy</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if app[2] %}
+                                        <p class="text-slate-300 text-sm mb-3 line-clamp-2">{{ app[2] }}</p>
+                                    {% endif %}
+                                    
+                                    <!-- status badge -->
+                                    <div class="mb-3">
+                                        <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-slate-700/50 text-slate-200">{{ app[8] or 'Pending' }}</span>
+                                    </div>
+                                    
+                                    <!-- links -->
+                                    <div class="flex flex-wrap gap-2">
+                                        {% if app[4] %}
+                                            <a href="{{ app[4] }}" target="_blank" rel="noopener" class="px-4 py-2 rounded-lg border border-slate-600 text-sm text-white hover:border-indigo-400 hover:text-indigo-400 transition">Privacy Policy</a>
+                                        {% endif %}
+                                        {% if app[6] %}
+                                            <a href="{{ app[6] }}" target="_blank" rel="noopener" class="px-4 py-2 rounded-lg border border-slate-600 text-sm text-white hover:border-indigo-400 hover:text-indigo-400 transition">Documentation</a>
+                                        {% endif %}
+                                        {% if app[11] %}
+                                            <a href="{{ app[11] }}" target="_blank" rel="noopener" class="px-4 py-2 rounded-lg border border-slate-600 text-sm text-white hover:border-indigo-400 hover:text-indigo-400 transition">Product Site</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </article>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- carousel dots -->
+                    {% if featured_apps|length > 1 %}
+                        <div class="flex justify-center gap-2 mt-6" id="carousel-dots">
+                            {% for _ in featured_apps %}
+                                <button class="w-2 h-2 rounded-full bg-slate-600 transition" data-index="{{ loop.index0 }}" aria-label="Go to slide {{ loop.index }}"></button>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        <!-- apps grid (filtered or categorized) -->
+        <section class="space-y-12">
+            {% if query or soppa_filter or privacy_filter %}
+                <!-- filtered view: simple grid without categories -->
+                <div>
+                    <div class="mb-6">
+                        <h3 class="text-2xl font-bold text-white">Search Results</h3>
+                        <p class="text-sm text-slate-400 mt-2">{{ apps|length }} app{{ apps|length|string + 's' if apps|length != 1 else '' }} found</p>
+                    </div>
+
+                    {% if apps %}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {% for app in apps %}
+                                <div class="app-card rounded-2xl p-6 hover:border-indigo-500">
+                                    <a href="{% if app[11] %}{{ app[11] }}{% else %}#{% endif %}" target="_blank" rel="noopener" class="block group">
+                                        <div class="flex items-start gap-4 mb-4">
+                                            <div class="app-icon">
+                                                <img src="/static/product_images/Configure {{ app[1] }} for Your Organization's Library - LearnPlatform.png" alt="{{ app[1] }}" onerror="this.style.display='none'; this.parentElement.textContent='{{ app[1][0:1]|upper }}'">
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-semibold text-white group-hover:text-indigo-400 transition">{{ app[1] }}</h4>
+                                                <p class="text-sm text-slate-400">{{ app[3] or 'Publisher' }}</p>
+                                            </div>
+                                        </div>
+
+                                        {% if app[2] %}
+                                            <p class="text-sm text-slate-300 mb-4 line-clamp-2">{{ app[2] }}</p>
+                                        {% endif %}
+
+                                        <div class="flex flex-wrap gap-2 mb-4">
+                                            {% if app[5] %}
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300">SOPPA: {{ app[5] }}</span>
+                                            {% else %}
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-300">No SOPPA</span>
+                                            {% endif %}
+                                            {% if app[4] %}
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300">Has Privacy</span>
+                                            {% else %}
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-700/50 text-slate-300">No Privacy</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="flex flex-wrap gap-2 pt-4 border-t border-slate-700">
+                                            {% if app[4] %}
+                                                <a href="{{ app[4] }}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">Privacy</a>
+                                            {% endif %}
+                                            {% if app[6] %}
+                                                <a href="{{ app[6] }}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">Docs</a>
+                                            {% endif %}
+                                        </div>
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-16 bg-slate-900/50 rounded-2xl border border-slate-700">
+                            <p class="text-slate-400">No apps found. Try adjusting your search or filters.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <!-- default view: categorized sections -->
+                {% for status, items in status_columns %}
+                    <div>
+                        <div class="mb-6">
+                            <p class="text-xs uppercase tracking-widest text-slate-400 font-semibold">{{ status|lower }}</p>
+                            <h3 class="text-2xl font-bold text-white mt-1">{{ status }}</h3>
+                            <p class="text-sm text-slate-400 mt-2">{{ items|length }} app{{ items|length|string + 's' if items|length != 1 else '' }} available</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {% for app in items[:12] %}
+                                <div class="app-card rounded-2xl p-6 hover:border-indigo-500">
+                                    <a href="{% if app[11] %}{{ app[11] }}{% else %}#{% endif %}" target="_blank" rel="noopener" class="block group">
+                                        <div class="flex items-start gap-4 mb-4">
+                                            <div class="app-icon">
+                                                <img src="/static/product_images/Configure {{ app[1] }} for Your Organization's Library - LearnPlatform.png" alt="{{ app[1] }}" onerror="this.style.display='none'; this.parentElement.textContent='{{ app[1][0:1]|upper }}'">
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-semibold text-white group-hover:text-indigo-400 transition">{{ app[1] }}</h4>
+                                                <p class="text-sm text-slate-400">{{ app[3] or 'Publisher' }}</p>
+                                            </div>
+                                        </div>
+
+                                        {% if app[2] %}
+                                            <p class="text-sm text-slate-300 mb-4 line-clamp-2">{{ app[2] }}</p>
+                                        {% endif %}
+
+                                        <div class="flex flex-wrap gap-2 mb-4">
+                                            {% if app[5] %}
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300">SOPPA: {{ app[5] }}</span>
+                                            {% else %}
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-300">No SOPPA</span>
+                                            {% endif %}
+                                            {% if app[4] %}
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300">Has Privacy</span>
+                                            {% else %}
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-700/50 text-slate-300">No Privacy</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="flex flex-wrap gap-2 pt-4 border-t border-slate-700">
+                                            {% if app[4] %}
+                                                <a href="{{ app[4] }}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">Privacy</a>
+                                            {% endif %}
+                                            {% if app[6] %}
+                                                <a href="{{ app[6] }}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">Docs</a>
+                                            {% endif %}
+                                        </div>
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        {% if items|length > 12 %}
+                            <div class="text-center mt-6">
+                                <a href="{{ url_for('new_looks_v6') }}?tag={{ status }}" class="inline-block px-6 py-2 rounded-lg border border-indigo-600 text-indigo-400 font-semibold hover:bg-indigo-600/20 transition">
+                                    See all {{ items|length }} apps
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                {% if not status_columns %}
+                    <div class="text-center py-16 bg-slate-900/50 rounded-2xl border border-slate-700">
+                        <p class="text-slate-400">No apps found.</p>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </section>
+
+        <!-- footer -->
+        <footer class="border-t border-slate-700/50 mt-16 pt-8 pb-4 text-center text-sm text-slate-400">
+            <p>Alexandria Library App Catalog</p>
+            <p class="mt-1">Discover tools designed to enhance your learning experience</p>
+        </footer>
+    </main>
+
+    <script>
+        // Featured apps carousel functionality
+        const carousel = document.getElementById('featured-carousel');
+        if (carousel) {
+            const track = carousel.querySelector('.carousel-track');
+            const dots = carousel.querySelectorAll('#carousel-dots button');
+            const slides = track ? track.children.length : 0;
+            let current = 0;
+
+            const goTo = (n) => {
+                if (!track || slides === 0) return;
+                current = (n + slides) % slides;
+                track.style.transform = `translateX(${current * -100}%)`;
+                
+                dots.forEach((dot, idx) => {
+                    dot.classList.toggle('bg-slate-300', idx === current);
+                    dot.classList.toggle('bg-slate-600', idx !== current);
+                });
+            };
+
+            // Dot navigation
+            dots.forEach(dot => {
+                dot.addEventListener('click', () => {
+                    clearInterval(timer);
+                    goTo(parseInt(dot.dataset.index));
+                    timer = setInterval(() => goTo(current + 1), 5000);
+                });
+            });
+
+            // Auto-rotate
+            let timer = setInterval(() => goTo(current + 1), 5000);
+            
+            // Pause on hover
+            carousel?.addEventListener('mouseenter', () => clearInterval(timer));
+            carousel?.addEventListener('mouseleave', () => {
+                timer = setInterval(() => goTo(current + 1), 5000);
+            });
+
+            goTo(0);
+        }
+    </script>
+</body>
+</html>

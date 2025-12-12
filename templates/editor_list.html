@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alexandria — Manage Apps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              background: '#0B1221',
+              surface: '#0F162A',
+              border: '#1F2A44',
+              muted: '#94A3B8',
+              primary: '#3B82F6',
+              primaryDark: '#1D4ED8',
+              success: '#10B981',
+              warning: '#F59E0B',
+              danger: '#EF4444',
+            },
+            boxShadow: {
+              soft: '0 8px 30px rgba(0, 0, 0, 0.3)',
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-background text-slate-100">
+    <div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <header class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1">
+          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Admin</p>
+          <h1 class="text-3xl font-bold text-white">Manage Applications</h1>
+          <p class="text-slate-400"
+            >Curate, edit, and review every app in the Alexandria library.</p
+          >
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <a
+            href="/admin/requests"
+            class="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-slate-200 hover:border-slate-500 hover:bg-slate-900 transition"
+          >
+            <span>📥</span> Requests
+          </a>
+          <a
+            href="/staff"
+            class="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-slate-200 hover:border-slate-500 hover:bg-slate-900 transition"
+          >
+            <span>👁️</span> Staff view
+          </a>
+          <a
+            href="/admin/activity-log"
+            class="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-slate-200 hover:border-slate-500 hover:bg-slate-900 transition"
+          >
+            <span>📊</span> Activity log
+          </a>
+        </div>
+      </header>
+
+      {% set stats = namespace(visible=0, pending=0) %} {% for app in apps %} {%
+      if app[5] %}{% set stats.visible = stats.visible + 1 %}{% endif %} {% if
+      app[3] and app[3]|lower == 'pending' %}{% set stats.pending =
+      stats.pending + 1 %}{% endif %} {% endfor %}
+
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div
+          class="rounded-2xl border border-border/60 bg-surface p-4 shadow-soft flex items-center justify-between"
+        >
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400"
+              >Total apps</p
+            >
+            <p class="text-2xl font-semibold text-white">{{ apps|length }}</p>
+          </div>
+          <div class="text-primary text-xl">📚</div>
+        </div>
+        <div
+          class="rounded-2xl border border-border/60 bg-surface p-4 shadow-soft flex items-center justify-between"
+        >
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400"
+              >Visible</p
+            >
+            <p class="text-2xl font-semibold text-white">{{ stats.visible }}</p>
+          </div>
+          <div class="text-success text-xl">✅</div>
+        </div>
+        <div
+          class="rounded-2xl border border-border/60 bg-surface p-4 shadow-soft flex items-center justify-between"
+        >
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400"
+              >Pending</p
+            >
+            <p class="text-2xl font-semibold text-white">{{ stats.pending }}</p>
+          </div>
+          <div class="text-warning text-xl">⏳</div>
+        </div>
+      </section>
+
+      <section
+        class="rounded-2xl border border-border/60 bg-surface p-4 shadow-soft space-y-4"
+      >
+        <div
+          class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+        >
+          <div class="flex flex-1 items-center gap-3">
+            <div class="relative w-full max-w-xl">
+              <span
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+                >🔍</span
+              >
+              <input
+                id="search"
+                type="search"
+                placeholder="Search apps or companies..."
+                class="w-full rounded-lg border border-border bg-transparent pl-10 pr-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-primary focus:ring-2 focus:ring-primary/40 outline-none"
+              />
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <select
+              id="statusFilter"
+              class="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-white focus:border-primary focus:ring-2 focus:ring-primary/40 outline-none"
+            >
+              <option value="">Status: All</option>
+              <option value="approved">Approved</option>
+              <option value="pending">Pending</option>
+              <option value="denied">Denied</option>
+              <option value="core">Core Tool</option>
+            </select>
+            <select
+              id="visibilityFilter"
+              class="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-white focus:border-primary focus:ring-2 focus:ring-primary/40 outline-none"
+            >
+              <option value="">Visibility: All</option>
+              <option value="public">Public</option>
+              <option value="hidden">Hidden</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-xl border border-border/60">
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm" id="appsTable">
+              <thead
+                class="bg-surface border-b border-border/80 text-slate-400 uppercase text-xs tracking-wide"
+              >
+                <tr>
+                  <th class="px-4 py-3 text-left">Application</th>
+                  <th class="px-4 py-3 text-left">Company</th>
+                  <th class="px-4 py-3 text-left">Status</th>
+                  <th class="px-4 py-3 text-left">SOPPA</th>
+                  <th class="px-4 py-3 text-left">Visibility</th>
+                  <th class="px-4 py-3 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border/60">
+                {% if apps %} {% for app in apps %}
+                <tr
+                  class="hover:bg-white/5 transition"
+                  data-name="{{ (app[1] or '')|lower }}"
+                  data-company="{{ (app[2] or '')|lower }}"
+                  data-status="{{ (app[3] or '')|lower }}"
+                  data-visibility="{{ 'public' if app[5] else 'hidden' }}"
+                >
+                  <td class="px-4 py-3">
+                    <div class="font-semibold text-white">{{ app[1] }}</div>
+                  </td>
+                  <td class="px-4 py-3 text-slate-300">{{ app[2] or '—' }}</td>
+                  <td class="px-4 py-3">
+                    {% set status = app[3] or 'Not Set' %} {% set status_l =
+                    status|lower %} {% if 'approved' in status_l or 'core' in
+                    status_l %}
+                    <span
+                      class="inline-flex items-center rounded-full bg-success/20 px-3 py-1 text-xs font-semibold text-success"
+                      >{{ status }}</span
+                    >
+                    {% elif 'pending' in status_l %}
+                    <span
+                      class="inline-flex items-center rounded-full bg-warning/20 px-3 py-1 text-xs font-semibold text-warning"
+                      >{{ status }}</span
+                    >
+                    {% elif 'denied' in status_l or 'not supported' in status_l
+                    %}
+                    <span
+                      class="inline-flex items-center rounded-full bg-danger/20 px-3 py-1 text-xs font-semibold text-danger"
+                      >{{ status }}</span
+                    >
+                    {% else %}
+                    <span
+                      class="inline-flex items-center rounded-full bg-slate-700/50 px-3 py-1 text-xs font-semibold text-slate-200"
+                      >{{ status }}</span
+                    >
+                    {% endif %}
+                  </td>
+                  <td class="px-4 py-3 text-slate-300">{{ app[4] or '—' }}</td>
+                  <td class="px-4 py-3">
+                    <div
+                      class="inline-flex items-center gap-2 text-slate-200 text-sm"
+                    >
+                      <span
+                        class="h-2 w-2 rounded-full {{ 'bg-success' if app[5] else 'bg-slate-500' }}"
+                      ></span>
+                      <span>{{ 'Public' if app[5] else 'Hidden' }}</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3">
+                    <a
+                      href="/admin/apps/{{ app[0] }}/edit"
+                      class="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-white hover:border-primary hover:text-primary transition"
+                      >Edit</a
+                    >
+                  </td>
+                </tr>
+                {% endfor %} {% else %}
+                <tr>
+                  <td colspan="6" class="px-4 py-8 text-center text-slate-400"
+                    >No apps found. Try adding one or adjust filters.</td
+                  >
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const searchInput = document.getElementById('search');
+      const statusFilter = document.getElementById('statusFilter');
+      const visibilityFilter = document.getElementById('visibilityFilter');
+      const rows = Array.from(document.querySelectorAll('#appsTable tbody tr'));
+
+      function applyFilters() {
+        const q = (searchInput?.value || '').trim().toLowerCase();
+        const status = (statusFilter?.value || '').toLowerCase();
+        const visibility = (visibilityFilter?.value || '').toLowerCase();
+
+        rows.forEach((row) => {
+          const name = row.dataset.name || '';
+          const company = row.dataset.company || '';
+          const rowStatus = row.dataset.status || '';
+          const rowVisibility = row.dataset.visibility || '';
+
+          const matchesSearch = !q || name.includes(q) || company.includes(q);
+          const matchesStatus = !status || rowStatus.includes(status);
+          const matchesVisibility = !visibility || rowVisibility === visibility;
+
+          row.style.display =
+            matchesSearch && matchesStatus && matchesVisibility ? '' : 'none';
+        });
+      }
+
+      searchInput?.addEventListener('input', applyFilters);
+      statusFilter?.addEventListener('change', applyFilters);
+      visibilityFilter?.addEventListener('change', applyFilters);
+    </script>
+  </body>
+</html>

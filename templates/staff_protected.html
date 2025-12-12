@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Alexandria — District App Library</title>
+    <style>
+      :root {
+        --bg: #f6f7fb;
+        --card: #ffffff;
+        --muted: #6b7280;
+        --accent: #2b6cb0;
+        --pill-radius: 12px; /* rounded-square */
+        --logo-size: 64px;
+        --status-width: 120px;
+        --glass: rgba(255, 255, 255, 0.6);
+      }
+      /* dark mode removed */
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+          Roboto, 'Helvetica Neue', Arial;
+        text-decoration: none;
+      }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+          Roboto, 'Helvetica Neue', Arial;
+        background: var(--bg);
+        color: #0f172a;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        padding: 32px;
+      }
+      /* Override base body colors when dark mode is active */
+      body.dark-mode {
+        background: var(--bg);
+        color: #e2e8f0;
+      }
+      /* Ensure dark mode overrides the base body colors (must come AFTER the base body rule) */
+      body.dark-mode {
+        background: var(--bg);
+        color: #e2e8f0;
+      }
+      header {
+        max-width: 1100px;
+        margin: 0 auto 12px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        justify-content: center;
+        text-align: center;
+      }
+      .brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .brand h1 {
+        margin: 0;
+        font-size: 48px;
+        letter-spacing: -0.02em;
+      }
+      .brand p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      /* search */
+      .search-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 18px 0;
+      }
+      .search-field {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        background: var(--card);
+        padding: 8px 12px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(12, 18, 33, 0.04);
+      }
+      .search-field input {
+        border: 0;
+        outline: none;
+        background: transparent;
+        padding: 8px;
+        font-size: 14px;
+        flex: 1;
+      }
+      .search-count {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      /* grid: 3-4 pills per row depending on width */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+        align-items: start;
+      }
+
+      /* pill layout: use grid so the tags separator can span from under the links to under the status column */
+      .pill {
+        background: var(--card);
+        padding: 14px 18px;
+        border-radius: var(--pill-radius);
+        box-shadow: 0 6px 18px rgba(12, 18, 33, 0.06);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        min-height: 130px;
+        max-height: 210px;
+        height: 210px;
+        max-width: 490px;
+        display: grid;
+        gap: 14px;
+        align-items: center;
+        position: relative;
+        overflow: visible;
+        z-index: 0;
+        isolation: isolate; /* Creates a new stacking context */
+      }
+
+      /* Status-based subtle tint overlays (only applied to Core and Supplemental)
+         Core Tool = green ttint, Supplemental Tool = indigo tint */
+      .pill[data-status="Core Tool"] {
+        box-shadow: inset 0 0 0 1000px rgba(16,185,129,0.12), 0 6px 18px rgba(12,18,33,0.06);
+      }
+      .pill[data-status="Supplemental Tool"] {
+        box-shadow: inset 0 0 0 1000px rgba(99,102,241,0.12), 0 6px 18px rgba(12,18,33,0.06);
+      }
+
+      /* Ensure proper stacking order */
+      .pill {
+        z-index: 10;
+        position: relative;
+      }
+      .pill:hover,
+      .pill:focus-within {
+        z-index: 20;
+      }
+
+      .logo {
+        width: var(--logo-size);
+        height: var(--logo-size);
+        border-radius: 8px;
+        display: grid;
+        place-items: start;
+        font-weight: 700;
+        color: white;
+        font-size: 20px;
+        width: auto;
+        min-height: 64px;
+        align-items: center;
+        margin-top: 6px;
+      }
+      .logo svg {
+        height: 64px;
+      }
+
+      /* make .info span to the same full width as the tags separator (logo -> right edge) while preventing overlap with status using right padding */
+      .info {
+        min-width: 0;
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+        margin-left: 0;
+        height: 100%;
+        text-align: center;
+        width: 90%;
+      }
+      .info-top {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+      }
+      .app-details {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* center name */
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+      }
+      .status-indicators {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .title {
+        display: block;
+      }
+      /* allow wrapping so names/company won't be cut off unless they truly exceed the whole square */
+      .app-name {
+        font-weight: 600;
+        font-size: 15px;
+        display: block;
+        overflow-wrap: break-word;
+        word-break: normal;
+        min-height: 20px;
+        text-align: center; /* ensure centered text */
+        width: 100%;
+      }
+      .company {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        display: inline-block;
+        vertical-align: top;
+        position: relative;
+        cursor: default;
+      }
+
+      /* Company tooltip */
+      .company-wrap {
+        position: relative;
+        display: block;
+        max-width: 100%;
+      }
+
+      .company::after {
+        content: attr(data-fullname);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 1001;
+        margin-bottom: 8px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+        visibility: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .company.is-truncated:hover::after {
+        opacity: 1;
+      }
+
+      /* meta row (links) */
+      .search-wrap {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .request-app-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: var(--card);
+        padding: 16px 12px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(12, 18, 33, 0.04);
+        border: 0;
+        cursor: pointer;
+        font-size: 14px;
+        min-width: 120px;
+        max-width: 150px;
+      }
+
+      .request-app-btn:hover {
+        background-color: #f3f4f6;
+        border-color: #9ca3af;
+      }
+
+      .meta-row {
+        display: flex;
+        flex-wrap: wrap;
+
+        margin-top: 8px;
+        align-items: center;
+        justify-content: center;
+        min-height: 28px; /* reserve space so empty rows align */
+        width: 100%;
+        gap:12px
+      }
+
+      .meta-item-slot {
+        display: inline-flex;
+        justify-content: center;
+        flex: 0 0 auto;
+      }
+
+      .meta-row a,
+      .meta-row .soppa,
+      .meta-row .badge {
+        font-size: 12px;
+        padding: 6px 8px;
+        border-radius: 999px;
+        background: rgba(43, 108, 176, 0.06);
+        color: var(--accent);
+        font-weight: 600;
+        margin: 0;
+        display: inline-block;
+      }
+
+      .meta-row .badge.approved {
+        background: rgba(34, 197, 94, 0.12);
+        color: #16a34a;
+      }
+
+      .meta-row .badge.revoked {
+        background: #fee2e2;
+        color: #ef4444;
+        font-weight: 600;
+      }
+
+      .meta-row .badge.pending {
+        background: #fef3c7;
+        color: #f59e0b;
+        font-weight: 600;
+      }
+
+      .meta-row .soppa-compliant {
+        background: #d1fae5;
+        color: #059669;
+        font-weight: 600;
+      }
+      .meta-row .soppa-partial {
+        background: #fef3c7;
+        color: #f59e0b;
+        font-weight: 600;
+      }
+      .meta-row .soppa-noncompliant {
+        background: #fee2e2;
+        color: #ef4444;
+        font-weight: 600;
+      }
+      .meta-row .soppa-unknown {
+        background: #e5e7eb;
+        color: #6b7280;
+        font-weight: 600;
+      }
+      .meta-row .soppa-other {
+        background: rgba(43, 108, 176, 0.06);
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .status-icon {
+        position: relative;
+        display: inline-flex;
+        z-index: 1; /* Ensure the icon is above the pill background */
+      }
+
+      .status-icon .tooltip,
+      .soppa-icon .tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        z-index: 1000;
+        transform: translateX(-50%);
+        transform: translateX(-50%);
+        background-color: #333;
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+        z-index: 9999; /* ensure above all pills */
+        pointer-events: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        margin-bottom: 8px;
+        /* Ensure tooltip stays within viewport */
+        max-width: 300px;
+        overflow: visible;
+        text-overflow: ellipsis;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+          Roboto, 'Helvetica Neue', Arial;
+      }
+
+      .status-icon:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
+        overflow: visible;
+      }
+
+      .status-icon svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .soppa-icon {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16.67px;
+        height: 16.67px;
+        border-radius: 4px;
+        color: white;
+        font-size: 12px;
+        font-weight: 700;
+        z-index: 1;
+      }
+
+      .soppa-icon .tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+        z-index: 9999; /* ensure above all pills */
+        pointer-events: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        margin-bottom: 8px;
+      }
+
+      .soppa-icon:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .soppa-icon.soppa-compliant {
+        background-color: #16a34a;
+      }
+      .soppa-icon.soppa-partial {
+        background-color: #f59e0b;
+      }
+      .soppa-icon.soppa-noncompliant {
+        background-color: #ef4444;
+      }
+      .soppa-icon.soppa-unknown {
+        background-color: #6b7280;
+      }
+      .soppa-icon.soppa-other {
+        background-color: #2b6cb0;
+      }
+
+      .title {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .app-name {
+        flex-grow: 0;
+      }
+
+      /* filter dropdown */
+      .filter-wrap {
+        position: relative;
+      }
+      .filter-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: var(--card);
+        padding: 16px 12px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(12, 18, 33, 0.04);
+        border: 0;
+        cursor: pointer;
+        font-size: 14px;
+        min-width: 120px;
+        max-width: 150px;
+      }
+      .filter-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: var(--card);
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(12, 18, 33, 0.1);
+        padding: 12px;
+        margin-top: 8px;
+        z-index: 1002; /* above sticky legend */
+        display: none; /* hidden by default */
+        min-width: 200px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      .filter-dropdown.show {
+        display: block;
+      }
+      .filter-dropdown label {
+        display: block;
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .filter-dropdown label:hover {
+        background: var(--bg);
+      }
+      .filter-dropdown input {
+        margin-right: 8px;
+      }
+
+      /* smaller screens: stack pills vertically and reset spans/padding */
+      @media (max-width: 2000px) {
+        .pill {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 12px;
+          border-radius: 12px;
+        }
+        .logo {
+          width: auto;
+          height: 64px;
+          border-radius: 8px;
+        }
+        .status {
+          align-items: flex-start;
+          width: 100%;
+          text-align: left;
+          margin-top: 8px;
+        }
+        .tags {
+          grid-column: auto;
+          width: 100%;
+        }
+        .info {
+          grid-column: auto;
+          padding-right: 0;
+        }
+      }
+
+      .legend-container {
+        display: grid;
+        grid-template-columns: repeat(9, minmax(0, 1fr));
+        place-items: center; /* centers content within each cell */
+        gap: 8px;
+        margin: 8px 0 16px;
+        padding: 6px 8px;
+        background: var(--glass);
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(12, 18, 33, 0.06);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+
+      .legend-section {
+        display: contents; /* flatten so all items flow in one row */
+      }
+
+      .legend-title {
+        display: none; /* hide section headers to keep a single slim row */
+      }
+
+      .legend-items {
+        display: contents; /* let items be direct grid children for even spacing */
+      }
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 11px;
+        text-align: center;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 6px;
+        transition: background-color 0.2s, transform 0.1s;
+      }
+
+      .legend-item:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        transform: scale(1.05);
+      }
+
+      .legend-item.active {
+        background-color: rgba(37, 99, 235, 0.1);
+        border: 1px solid rgba(37, 99, 235, 0.3);
+        font-weight: 600;
+      }
+
+      .legend-item .status-icon,
+      .legend-item .soppa-icon {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+      }
+
+      .legend-item .status-icon svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .legend-item .soppa-icon {
+        color: white;
+        font-weight: 700;
+        font-size: 9px;
+      }
+
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      footer {
+        max-width: 1100px;
+        margin: 28px auto 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .legend-container {
+        display: grid;
+        grid-template-columns: repeat(9, minmax(0, 1fr));
+        place-items: center;
+        gap: 8px;
+        margin: 8px 0 16px;
+        padding: 6px 8px;
+        background: var(--glass);
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(12, 18, 33, 0.06);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+
+      .legend-section {
+        display: contents;
+      }
+
+      .legend-title {
+        display: none;
+      }
+
+      .legend-items {
+        display: contents;
+      }
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 11px;
+        width: 100%;
+        text-align: center;
+      }
+
+      @media (max-width: 1200px) {
+        .legend-container {
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 820px) {
+        .legend-container {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 520px) {
+        .legend-container {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      .legend-item .status-icon,
+      .legend-item .soppa-icon {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+      }
+
+      .legend-item .status-icon svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .legend-item .soppa-icon {
+        color: white;
+        font-weight: 700;
+        font-size: 9px;
+      }
+
+      .link-btn {
+        outline: none;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+          Roboto, 'Helvetica Neue', Arial;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .link-btn:not(.disabled):hover {
+        box-shadow: 0 0 0 3px rgba(43, 107, 176, 0.363);
+        border-radius: 999px;
+      }
+      .link-btn.disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        pointer-events: none;
+        color: #6b7280;
+        background: rgba(107, 114, 128, 0.1) !important;
+      }
+      .meta-item-slot:empty {
+        display: none;
+      }
+      .theme-switcher {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+      }
+      .theme-switcher input {
+        display: none;
+      }
+      .theme-switcher label {
+        cursor: pointer;
+        display: block;
+        width: 50px;
+        height: 25px;
+        background-color: #ccc;
+        border-radius: 25px;
+        position: relative;
+        transition: background-color 0.3s;
+      }
+      .theme-switcher label span {
+        display: block;
+        width: 21px;
+        height: 21px;
+        background-color: white;
+        border-radius: 50%;
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        transition: left 0.3s;
+      }
+      .theme-switcher input:checked + label {
+        background-color: var(--accent);
+      }
+      .theme-switcher input:checked + label span {
+        left: 27px;
+      }
+    </style>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="static/site.webmanifest" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <h1>Alexandria</h1>
+        <p>Arlington Heights School District 25 App Library</p>
+      </div>
+    </header>
+
+    <main class="container" id="main-content">
+      <!-- Search -->
+      <div class="search-wrap" role="search" aria-label="Search approved apps">
+        <div class="filter-wrap">
+          <button
+            class="filter-btn"
+            id="filterBtn"
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              style="opacity: 0.7"
+            >
+              <path
+                d="M3 4h18M7 12h10M11 20h2"
+                stroke="#374151"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Filter
+          </button>
+          <div class="filter-dropdown" id="filterDropdown">
+            {% for tag in all_tags %}
+            <label>
+              <input type="checkbox" class="tag-filter" value="{{ tag }}" />
+              {{ tag }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="search-field">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            style="opacity: 0.7; margin-right: 8px"
+          >
+            <path
+              d="M21 21l-4.35-4.35"
+              stroke="#374151"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <circle
+              cx="11"
+              cy="11"
+              r="6"
+              stroke="#374151"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <input
+            id="search"
+            type="search"
+            placeholder="Search apps or companies..."
+            aria-label="Search apps or companies"
+          />
+        </div>
+        <a href="https://forms.gle/tSj6qKaaNwzv1sMZ7" target="_blank" rel="noopener noreferrer" class="request-app-btn"style="text-decoration: none; color:#000000">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="opacity: 0.7;">
+            <path d="M12 5v14M5 12h14" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Request app
+        </a>
+      </div>
+
+      <!-- Legend -->
+      <div class="legend-container">
+        <div class="legend-section">
+          <h3 class="legend-title">Approval Status</h3>
+          <div class="legend-items">
+            <div class="legend-item" data-filter-type="status" data-filter-value="Approved for Use">
+              <div class="status-icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="16.67"
+                  height="16.67"
+                  fill="#28a745"
+                >
+                  <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                  />
+                </svg>
+              </div>
+              <span>Approved for Use</span>
+            </div>
+            <div class="legend-item" data-filter-type="status" data-filter-value="Core Tool">
+              <div class="status-icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="16.67"
+                  height="16.67"
+                >
+                  <circle cx="12" cy="12" r="10" fill="#3b82f6" />
+                  <path
+                    d="M10 16.59l-3.29-3.29 1.41-1.41L10 13.76l6.88-6.88 1.41 1.41L10 16.59z"
+                    fill="white"
+                  />
+                </svg>
+              </div>
+              <span>Core Tool</span>
+            </div>
+            <div class="legend-item" data-filter-type="status" data-filter-value="Pending">
+              <div class="status-icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="16.67"
+                  height="16.67"
+                  fill="#f59e0b"
+                >
+                  <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"
+                  />
+                </svg>
+              </div>
+              <span>Pending Review</span>
+            </div>
+            <div class="legend-item" data-filter-type="status" data-filter-value="Reviewed & Denied">
+              <div class="status-icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="16.67"
+                  height="16.67"
+                  fill="#dc3545"
+                >
+                  <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"
+                  />
+                </svg>
+              </div>
+              <span>Reviewed & Denied</span>
+            </div>
+            <div class="legend-item" data-filter-type="status" data-filter-value="No Status">
+              <div class="status-icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="16.67"
+                  height="16.67"
+                >
+                  <circle cx="12" cy="12" r="10" fill="#9ca3af" />
+                  <path d="M19 13H5v-2h14v2z" />
+                </svg>
+              </div>
+              <span>No Status</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend-section">
+          <h3 class="legend-title">SOPPA Status</h3>
+          <div class="legend-items">
+            <div class="legend-item" data-filter-type="soppa" data-filter-value="compliant">
+              <div class="soppa-icon soppa-compliant">S</div>
+              <span>Compliant</span>
+            </div>
+            <div class="legend-item" data-filter-type="soppa" data-filter-value="partial">
+              <div class="soppa-icon soppa-partial">S</div>
+              <span>Partially Compliant</span>
+            </div>
+            <div class="legend-item" data-filter-type="soppa" data-filter-value="noncompliant">
+              <div class="soppa-icon soppa-noncompliant">S</div>
+              <span>Parent Consent Required</span>
+            </div>
+            <div class="legend-item" data-filter-type="soppa" data-filter-value="unknown">
+              <div class="soppa-icon soppa-unknown">S</div>
+              <span>Not Applicable</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section class="grid" aria-label="Approved apps list" id="appsGrid">
+        {% for app in apps %}
+        <article class="pill" tabindex="0" data-tags="{{ app[9] }}" data-status="{{ app[8] if app[8] else 'No Status' }}" data-soppa="{{ app[5]|lower if app[5] else 'unknown' }}">
+          <div class="logo">
+            {% if app[11] %}
+            <img
+              src="{% if app[11].startswith('/static/') or app[11].startswith('http') %}{{ app[11] }}{% else %}/static/{{ app[11] }}{% endif %}"
+              alt="App Logo"
+              style="
+                width: 64px;
+                height: auto;
+                border-radius: 8px;
+                object-fit: contain;
+                object-position: left;
+              "
+            />
+            {% else %}
+            <img
+              src="https://via.placeholder.com/64"
+              alt="App Logo"
+              style="
+                width: 36px;
+                height: 36px;
+                border-radius: 8px;
+                object-fit: cover;
+                display: block;
+                margin: 0;
+              "
+            />
+            {% endif %}
+          </div>
+
+          <div class="status-indicators">
+            <div class="status-icon">
+              <div class="tooltip">{{ app[8] if app[8] else 'No Status' }}</div>
+              {% if app[8] == 'Approved for Use' or app[8] == 'Core Tool' %}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="16.67"
+                height="16.67"
+                fill="#28a745"
+              >
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                />
+              </svg>
+              {% elif app[8] == 'Supplemental Tool' %}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="16.67"
+                height="16.67"
+              >
+                <circle cx="12" cy="12" r="10" fill="#3b82f6" />
+                <path
+                  d="M10 16.59l-3.29-3.29 1.41-1.41L10 13.76l6.88-6.88 1.41 1.41L10 16.59z"
+                  fill="white"
+                />
+              </svg>
+              {% elif app[8] == 'Pending' %}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="16.67"
+                height="16.67"
+                fill="#f59e0b"
+              >
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"
+                />
+              </svg>
+              {% elif app[8] == 'Reviewed & Denied' %}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="16.67"
+                height="16.67"
+                fill="#dc3545"
+              >
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"
+                />
+              </svg>
+              {% elif app[8] == 'Not Supported by District' %}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="16.67"
+                height="16.67"
+              >
+                <circle cx="12" cy="12" r="10" fill="#f59e0b" />
+                <path
+                  d="M12 7v6"
+                  stroke="white"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <circle cx="12" cy="16" r="1" fill="white" />
+              </svg>
+              {% else %}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="16.67"
+                height="16.67"
+                fill="#9ca3af"
+              >
+                <path d="M19 13H5v-2h14v2z" />
+              </svg>
+              {% endif %}
+            </div>
+            {% set soppa = app[5]|lower %}
+            <div
+              class="soppa-icon {% if soppa == 'compliant' or soppa == 'policies are soppa compliant' %}soppa-compliant{% elif soppa == 'partial' or soppa == 'not fully soppa compliant' %}soppa-partial{% elif soppa == 'noncompliant' or soppa == 'parent consent required' %}soppa-noncompliant{% elif soppa == 'unknown' or soppa == 'not applicable' %}soppa-unknown{% else %}soppa-other{% endif %}"
+            >
+              <div class="tooltip">{{ app[5] }}</div>
+              S
+            </div>
+          </div>
+          <div class="info">
+            <div class="info-top">
+              <div class="app-details">
+                <div class="app-name">{{ app[1] }}</div>
+                <div class="company-wrap">
+                  <div class="company" data-fullname="{{ app[3] }}"
+                    >{{ app[3] }}</div
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="info-bottom">
+              <div class="meta-row">
+                <div class="meta-item-slot">
+                  <a
+                    class="link-btn{% if not app[4] %} disabled" aria-disabled="true"{% else %}" href="{{ app[4] }}" target="_blank"{% endif %}
+                    title="{% if not app[4] %}NDPA not available{% else %}View NDPA{% endif %}"
+                    >NDPA</a
+                  >
+                </div>
+                <div class="meta-item-slot">
+                  <a
+                    class="link-btn{% if not app[6] %} disabled" aria-disabled="true"{% else %}" href="{{ app[6] }}" target="_blank"{% endif %}
+                    title="{% if not app[6] %}Exhibit E not available{% else %}View Exhibit E{% endif %}"
+                    >Exhibit E</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+      </section>
+    </main>
+
+    <footer class="container">
+      <!-- <div style="margin-top: 12px">
+        Alexandria is a free, lightweight, open-source project created by
+        Zachary Koeppl.
+      </div>
+    -->
+    </footer>
+    <script>
+      // Check if text is truncated with ellipsis
+      function isTextTruncated(element) {
+        return element.offsetWidth < element.scrollWidth;
+      }
+
+      // Initialize tooltips for company names
+      function initCompanyTooltips() {
+        const companyElements = document.querySelectorAll('.company');
+        companyElements.forEach((company) => {
+          if (isTextTruncated(company)) {
+            company.classList.add('is-truncated');
+          }
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        // Initialize company tooltips
+        initCompanyTooltips();
+
+        const searchInput = document.getElementById('search');
+        const appsGrid = document.getElementById('appsGrid');
+        const pills = Array.from(appsGrid.getElementsByClassName('pill'));
+        const filterBtn = document.getElementById('filterBtn');
+        const filterDropdown = document.getElementById('filterDropdown');
+        const tagCheckboxes = Array.from(
+          document.getElementsByClassName('tag-filter')
+        );
+        
+        // Legend filter state
+        let activeStatusFilter = null;
+        let activeSoppaFilter = null;
+
+        function filterApps() {
+          const query = searchInput.value.toLowerCase();
+          const selectedTags = tagCheckboxes
+            .filter((checkbox) => checkbox.checked)
+            .map((checkbox) => checkbox.value.toLowerCase());
+
+          let visibleCount = 0;
+
+          pills.forEach((pill) => {
+            const appName = pill
+              .querySelector('.app-name')
+              .textContent.toLowerCase();
+            const companyName = pill
+              .querySelector('.company')
+              .textContent.toLowerCase();
+            const pillTags = (pill.getAttribute('data-tags') || '')
+              .toLowerCase()
+              .split(',');
+            
+            const pillStatus = pill.getAttribute('data-status');
+            const pillSoppa = pill.getAttribute('data-soppa');
+
+            const matchesSearch =
+              appName.includes(query) || companyName.includes(query);
+            const matchesTags =
+              selectedTags.length === 0 ||
+              selectedTags.every((tag) => pillTags.includes(tag));
+            
+            // Check status filter
+            const matchesStatus = !activeStatusFilter || pillStatus === activeStatusFilter;
+            
+            // Check SOPPA filter (need to handle various SOPPA values)
+            let matchesSoppa = true;
+            if (activeSoppaFilter) {
+              const soppaLower = (pillSoppa || '').toLowerCase();
+              if (activeSoppaFilter === 'compliant') {
+                matchesSoppa = soppaLower === 'compliant' || soppaLower === 'policies are soppa compliant';
+              } else if (activeSoppaFilter === 'partial') {
+                matchesSoppa = soppaLower === 'partial' || soppaLower === 'not fully soppa compliant';
+              } else if (activeSoppaFilter === 'noncompliant') {
+                matchesSoppa = soppaLower === 'noncompliant' || soppaLower === 'parent consent required';
+              } else if (activeSoppaFilter === 'unknown') {
+                matchesSoppa = soppaLower === 'unknown' || soppaLower === 'not applicable' || soppaLower === 'staff use only';
+              }
+            }
+
+            if (matchesSearch && matchesTags && matchesStatus && matchesSoppa) {
+              pill.style.display = '';
+              visibleCount++;
+            } else {
+              pill.style.display = 'none';
+            }
+          });
+        }
+
+        // --- Event Listeners ---
+        searchInput.addEventListener('input', filterApps);
+        tagCheckboxes.forEach((checkbox) =>
+          checkbox.addEventListener('change', filterApps)
+        );
+        
+        // Legend filter click handlers
+        const legendItems = document.querySelectorAll('.legend-item[data-filter-type]');
+        legendItems.forEach(item => {
+          item.addEventListener('click', function() {
+            const filterType = this.getAttribute('data-filter-type');
+            const filterValue = this.getAttribute('data-filter-value');
+            
+            if (filterType === 'status') {
+              // Toggle status filter
+              if (activeStatusFilter === filterValue) {
+                activeStatusFilter = null;
+                this.classList.remove('active');
+              } else {
+                activeStatusFilter = filterValue;
+                // Remove active from all status items
+                document.querySelectorAll('.legend-item[data-filter-type="status"]').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+              }
+              // Clear SOPPA filter when status is clicked
+              activeSoppaFilter = null;
+              document.querySelectorAll('.legend-item[data-filter-type="soppa"]').forEach(i => i.classList.remove('active'));
+            } else if (filterType === 'soppa') {
+              // Toggle SOPPA filter
+              if (activeSoppaFilter === filterValue) {
+                activeSoppaFilter = null;
+                this.classList.remove('active');
+              } else {
+                activeSoppaFilter = filterValue;
+                // Remove active from all soppa items
+                document.querySelectorAll('.legend-item[data-filter-type="soppa"]').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+              }
+              // Clear status filter when SOPPA is clicked
+              activeStatusFilter = null;
+              document.querySelectorAll('.legend-item[data-filter-type="status"]').forEach(i => i.classList.remove('active'));
+            }
+            
+            filterApps();
+          });
+        });
+
+        // Dropdown toggle logic
+        filterBtn.addEventListener('click', () => {
+          const isExpanded = filterBtn.getAttribute('aria-expanded') === 'true';
+          filterBtn.setAttribute('aria-expanded', !isExpanded);
+          filterDropdown.classList.toggle('show');
+        });
+
+        // Close dropdown if clicking outside
+        document.addEventListener('click', function (event) {
+          if (
+            !filterBtn.contains(event.target) &&
+            !filterDropdown.contains(event.target)
+          ) {
+            filterBtn.setAttribute('aria-expanded', 'false');
+            filterDropdown.classList.remove('show');
+          }
+        });
+
+        // Initial filter
+        filterApps();
+
+        // dark mode removed
+      });
+    </script>
+  </body>
+</html>
