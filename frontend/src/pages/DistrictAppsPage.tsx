@@ -61,9 +61,11 @@ interface AppData {
 function AppContacts({
   districtSlug,
   appId,
+  isAdmin,
 }: {
   districtSlug: string;
   appId: number;
+  isAdmin: boolean;
 }) {
   const [contacts, setContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -76,9 +78,20 @@ function AppContacts({
     role: 'Support',
   });
   const [adding, setAdding] = useState(false);
+  const [error, setError] = useState<string>('');
+
+  // Prefetch contact count so the button shows an accurate number before expand
+  useEffect(() => {
+    if (!isAdmin) return;
+    getAppContacts(districtSlug, appId)
+      .then((data) => {
+        if (Array.isArray(data)) setContacts(data);
+      })
+      .catch(console.error);
+  }, [districtSlug, appId, isAdmin]);
 
   useEffect(() => {
-    if (expanded) {
+    if (expanded && isAdmin) {
       setLoading(true);
       getAppContacts(districtSlug, appId)
         .then((data) => {
@@ -87,10 +100,11 @@ function AppContacts({
         .catch(console.error)
         .finally(() => setLoading(false));
     }
-  }, [expanded, districtSlug, appId]);
+  }, [expanded, districtSlug, appId, isAdmin]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     if (!newContact.name || !newContact.email) return;
     setAdding(true);
     try {
@@ -101,11 +115,21 @@ function AppContacts({
       setShowForm(false);
     } catch (err) {
       console.error(err);
-      alert('Failed to add contact');
+      const message = err instanceof Error ? err.message : 'Failed to add contact';
+      setError(message);
+      alert(message);
     } finally {
       setAdding(false);
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="mt-3 pt-3 border-t bg-muted/40 rounded-b-lg px-4 pb-3">
+        <p className="text-xs text-muted-foreground">Admin-only section.</p>
+      </div>
+    );
+  }
 
   if (!expanded) {
     return (
@@ -122,7 +146,7 @@ function AppContacts({
   }
 
   return (
-    <div className="mt-3 pt-3 border-t bg-muted/30 -mx-6 px-6 pb-2">
+    <div className="mt-3 pt-3 border-t bg-muted/40 rounded-b-lg px-4 pb-3 w-full">
       <div className="flex justify-between items-center mb-2">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Vendor Contacts
@@ -131,7 +155,7 @@ function AppContacts({
           <Button
             size="sm"
             variant="secondary"
-            className="h-6 text-[10px] px-2"
+            className="h-7 text-[11px] px-2"
             onClick={() => setShowForm(!showForm)}
           >
             {showForm ? 'Cancel' : 'Add New'}
@@ -151,13 +175,25 @@ function AppContacts({
         <p className="text-xs text-muted-foreground italic">Loading...</p>
       ) : (
         <div className="space-y-2">
+          {error && (
+            <p className="text-[11px] text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
+              {error}
+            </p>
+          )}
           {contacts.map((c) => (
             <div
               key={c.id}
               className="text-xs p-2 rounded bg-background border shadow-sm"
             >
               <div className="flex justify-between items-start">
-                <span className="font-semibold">{c.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">{c.name}</span>
+                  {c.is_primary && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200">
+                      Primary
+                    </span>
+                  )}
+                </div>
                 <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-[10px]">
                   {c.role || 'Contact'}
                 </span>
@@ -235,7 +271,7 @@ function AppContacts({
             type="submit"
             size="sm"
             disabled={adding}
-            className="w-full h-7 text-xs"
+            className="w-full h-8 text-xs"
           >
             {adding ? 'Saving...' : 'Save Contact'}
           </Button>
@@ -791,9 +827,13 @@ export default function DistrictAppsPage() {
                 )}
               </CardContent>
 
-              <CardFooter className="p-0 pt-2">
-                {isAuthenticated && (
-                  <AppContacts districtSlug={districtSlug} appId={app.id} />
+              <CardFooter className="p-0 pt-2 w-full">
+                {isAuthenticated && isAdmin && (
+                  <AppContacts
+                    districtSlug={districtSlug}
+                    appId={app.id}
+                    isAdmin={isAdmin}
+                  />
                 )}
               </CardFooter>
             </Card>

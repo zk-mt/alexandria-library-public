@@ -56,6 +56,10 @@ FRONTEND_ORIGINS = [
     if origin.strip()
 ]
 
+# Default admin bootstrap values (hoisted before use)
+INIT_ADMIN_EMAIL = os.getenv('INIT_ADMIN_EMAIL', 'admin')
+INIT_ADMIN_PASSWORD = os.getenv('INIT_ADMIN_PASSWORD')
+
 # File upload configuration
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'documents')
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'xlsx', 'xls'}
@@ -202,9 +206,6 @@ os.makedirs(os.path.dirname(SQLITE_DB_PATH), exist_ok=True)
 # Single Tenant Configuration
 DISTRICT_NAME = os.getenv('DISTRICT_NAME', 'Default District')
 DISTRICT_CONTACT_EMAIL = os.getenv('DISTRICT_CONTACT_EMAIL', 'admin@example.com')
-# Seed admin login (username; does not need to be an email). Default: "admin".
-INIT_ADMIN_EMAIL = os.getenv('INIT_ADMIN_EMAIL', 'admin')
-INIT_ADMIN_PASSWORD = os.getenv('INIT_ADMIN_PASSWORD')
 
 
 # File upload helper functions
@@ -233,6 +234,24 @@ def save_uploaded_file(file, prefix='doc', include_static_prefix=True):
         else:
             return f"documents/{unique_filename}"
     return None
+
+
+def normalize_doc_path(path: str) -> str:
+    """Normalize stored document paths to a public /static/documents/* URL.
+
+    Handles older records that may have stored bare filenames, documents/, or static/documents/ prefixes.
+    Leaves full http(s) URLs untouched.
+    """
+    if not path:
+        return ''
+    path = path.strip()
+    if path.startswith(('http://', 'https://')):
+        return path
+    # Drop any leading slashes and directories; keep just the filename
+    name = Path(path).name
+    if not name:
+        return ''
+    return f"static/documents/{name}"
 
 def is_google_drive_link(url):
     """Check if URL is a Google Drive link"""
@@ -1018,7 +1037,8 @@ def auth_me():
             'name': user.get('name'),
             'picture': user.get('picture'), # Assuming 'picture' might be in session for OAuth users
             'role': role
-        }
+        },
+        'csrf_token': session.get('csrf_token')
     })
 
 
@@ -1542,7 +1562,10 @@ def api_vendor_contacts(app_id: int):
     cursor = conn.cursor()
 
     # Confirm app exists
-    cursor.execute('SELECT id, name FROM apps WHERE id=%s', (app_id,))
+    cursor.execute(
+        'SELECT id, name FROM apps WHERE id=?' if USE_SQLITE else 'SELECT id, name FROM apps WHERE id=%s',
+        (app_id,),
+    )
     app_row = cursor.fetchone()
     if not app_row:
         cursor.close()
@@ -1551,6 +1574,9 @@ def api_vendor_contacts(app_id: int):
 
     if request.method == 'GET':
         cursor.execute(
+            '''SELECT id, app_id, name, email, phone, role, notes, is_primary, tags, created_at, updated_at
+               FROM vendor_contacts WHERE app_id=? ORDER BY is_primary DESC, name ASC'''
+            if USE_SQLITE else
             '''SELECT id, app_id, name, email, phone, role, notes, is_primary, tags, created_at, updated_at
                FROM vendor_contacts WHERE app_id=%s ORDER BY is_primary DESC, name ASC''',
             (app_id,),
@@ -1575,10 +1601,16 @@ def api_vendor_contacts(app_id: int):
         return jsonify({'error': errors}), 400
 
     try:
-        cursor.execute(
+        insert_sql = (
+            '''INSERT INTO vendor_contacts (app_id, name, email, phone, role, notes, tags, is_primary)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)'''
+            if USE_SQLITE else
             '''INSERT INTO vendor_contacts (app_id, name, email, phone, role, notes, tags, is_primary)
                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-               RETURNING id, app_id, name, email, phone, role, notes, is_primary, tags, created_at, updated_at''',
+               RETURNING id, app_id, name, email, phone, role, notes, is_primary, tags, created_at, updated_at'''
+        )
+        cursor.execute(
+            insert_sql,
             (
                 app_id,
                 cleaned['name'],
@@ -1591,7 +1623,14 @@ def api_vendor_contacts(app_id: int):
             ),
         )
         conn.commit()
-        new_row = cursor.fetchone()
+        if USE_SQLITE:
+            cursor.execute(
+                '''SELECT id, app_id, name, email, phone, role, notes, is_primary, tags, created_at, updated_at
+                   FROM vendor_contacts WHERE rowid = last_insert_rowid()'''
+            )
+            new_row = cursor.fetchone()
+        else:
+            new_row = cursor.fetchone()
         record_app_activity(
             action='update',
             app_id=app_id,
@@ -1619,9 +1658,12 @@ def api_vendor_contact_detail(contact_id: int):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        '''SELECT id, app_id, name, email, phone, role, notes, is_primary, tags, created_at, updated_at
-           FROM vendor_contacts WHERE id=%s''',
-        (contact_id,),
+          '''SELECT id, app_id, name, email, phone, role, notes, is_primary, tags, created_at, updated_at
+              FROM vendor_contacts WHERE id=?'''
+          if USE_SQLITE else
+          '''SELECT id, app_id, name, email, phone, role, notes, is_primary, tags, created_at, updated_at
+              FROM vendor_contacts WHERE id=%s''',
+          (contact_id,),
     )
     row = cursor.fetchone()
     if not row:
@@ -1630,7 +1672,10 @@ def api_vendor_contact_detail(contact_id: int):
         return jsonify({'error': 'Contact not found'}), 404
 
     app_id = row[1]
-    cursor.execute('SELECT name FROM apps WHERE id=%s', (app_id,))
+    cursor.execute(
+        'SELECT name FROM apps WHERE id=?' if USE_SQLITE else 'SELECT name FROM apps WHERE id=%s',
+        (app_id,),
+    )
     app_row = cursor.fetchone()
     app_name = app_row[0] if app_row else ''
 
@@ -1641,7 +1686,10 @@ def api_vendor_contact_detail(contact_id: int):
             cursor.close()
             conn.close()
             return jsonify({'error': 'Invalid CSRF token'}), 403
-        cursor.execute('DELETE FROM vendor_contacts WHERE id=%s', (contact_id,))
+        cursor.execute(
+            'DELETE FROM vendor_contacts WHERE id=?' if USE_SQLITE else 'DELETE FROM vendor_contacts WHERE id=%s',
+            (contact_id,),
+        )
         conn.commit()
         record_app_activity(
             action='update',
@@ -1669,11 +1717,18 @@ def api_vendor_contact_detail(contact_id: int):
         return jsonify({'error': errors}), 400
 
     try:
-        cursor.execute(
+        update_sql = (
+            '''UPDATE vendor_contacts
+               SET name=?, email=?, phone=?, role=?, notes=?, tags=?, is_primary=?, updated_at=CURRENT_TIMESTAMP
+               WHERE id=?'''
+            if USE_SQLITE else
             '''UPDATE vendor_contacts
                SET name=%s, email=%s, phone=%s, role=%s, notes=%s, tags=%s, is_primary=%s, updated_at=NOW()
                WHERE id=%s
-               RETURNING id, app_id, name, email, phone, role, notes, is_primary, tags, created_at, updated_at''',
+               RETURNING id, app_id, name, email, phone, role, notes, is_primary, tags, created_at, updated_at'''
+        )
+        cursor.execute(
+            update_sql,
             (
                 cleaned['name'] or row[2],
                 cleaned['email'] or row[3],
@@ -1686,7 +1741,15 @@ def api_vendor_contact_detail(contact_id: int):
             ),
         )
         conn.commit()
-        updated = cursor.fetchone()
+        if USE_SQLITE:
+            cursor.execute(
+                '''SELECT id, app_id, name, email, phone, role, notes, is_primary, tags, created_at, updated_at
+                   FROM vendor_contacts WHERE id=?''',
+                (contact_id,),
+            )
+            updated = cursor.fetchone()
+        else:
+            updated = cursor.fetchone()
         record_app_activity(
             action='update',
             app_id=app_id,
@@ -2203,7 +2266,7 @@ def api_district_apps(slug):
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT id, name, company, status, soppa_compliant, product_visibility, product_link, tags
+            """SELECT id, name, company, status, soppa_compliant, product_visibility, product_link, tags, privacy_link, otherdocs
                    FROM apps ORDER BY name ASC"""
         )
         rows = cursor.fetchall()
@@ -2218,6 +2281,8 @@ def api_district_apps(slug):
                 'product_visibility': bool(r[5]),
                 'product_link': r[6] or '',
                 'tags': r[7] or '',
+                'ndpa_path': normalize_doc_path(r[8] or ''),
+                'exhibit_e_path': normalize_doc_path(r[9] or ''),
             })
         cursor.close()
         conn.close()
@@ -2393,7 +2458,7 @@ def api_update_delete_app(slug, app_id):
     try:
         # Load current state for logging
         cursor.execute(
-            "SELECT name, company, status, soppa_compliant, privacy_link, product_link, tags, notes, product_visibility FROM apps WHERE id = ?",
+            "SELECT name, company, status, soppa_compliant, privacy_link, product_link, tags, notes, product_visibility, otherdocs FROM apps WHERE id = ?",
             (app_id,),
         )
         before_row = cursor.fetchone()
@@ -2415,6 +2480,27 @@ def api_update_delete_app(slug, app_id):
         if isinstance(product_visibility, str):
             product_visibility = 1 if product_visibility.lower() in ('1', 'true', 'yes', 'on') else 0
 
+        # File uploads (ndpa, exhibit_e, logo)
+        ndpa_file = request.files.get('ndpa') if hasattr(request, 'files') else None
+        exhibit_e_file = request.files.get('exhibit_e') if hasattr(request, 'files') else None
+        logo_file = request.files.get('logo') if hasattr(request, 'files') else None
+        if ndpa_file and ndpa_file.filename:
+            uploaded = save_uploaded_file(ndpa_file, prefix='ndpa')
+            if uploaded:
+                privacy_link = uploaded
+        if exhibit_e_file and exhibit_e_file.filename:
+            uploaded = save_uploaded_file(exhibit_e_file, prefix='exhibit_e')
+            if uploaded:
+                # Store in otherdocs field to mirror create behavior
+                payload = dict(payload)
+                payload['otherdocs'] = uploaded
+        if logo_file and logo_file.filename:
+            uploaded = save_uploaded_file(logo_file, prefix='logo', include_static_prefix=False)
+            if uploaded:
+                product_link = uploaded
+
+        otherdocs = (payload.get('otherdocs') or '').strip()
+
         cursor.execute(
             """
             UPDATE apps
@@ -2425,7 +2511,8 @@ def api_update_delete_app(slug, app_id):
                 privacy_link = COALESCE(?, privacy_link),
                 product_link = COALESCE(?, product_link),
                 tags = COALESCE(?, tags),
-                notes = COALESCE(?, notes)
+                notes = COALESCE(?, notes),
+                otherdocs = COALESCE(?, otherdocs)
                 {visibility_clause}
             WHERE id = ?
             """.format(visibility_clause=", product_visibility = ?" if product_visibility is not None else ""),
@@ -2438,13 +2525,14 @@ def api_update_delete_app(slug, app_id):
                 product_link or None,
                 tags or None,
                 notes or None,
+                otherdocs or None,
             ] + ([product_visibility] if product_visibility is not None else []) + [app_id])
         )
         conn.commit()
 
         # Fetch updated state for logging
         cursor.execute(
-            "SELECT name, company, status, soppa_compliant, privacy_link, product_link, tags, notes, product_visibility FROM apps WHERE id = ?",
+            "SELECT name, company, status, soppa_compliant, privacy_link, product_link, tags, notes, product_visibility, otherdocs FROM apps WHERE id = ?",
             (app_id,),
         )
         after_row = cursor.fetchone()
@@ -2457,11 +2545,12 @@ def api_update_delete_app(slug, app_id):
                 'company': row[1],
                 'status': row[2],
                 'soppa_compliant': row[3],
-                'privacy_link': row[4],
+                'privacy_link': normalize_doc_path(row[4]) if row[4] else row[4],
                 'product_link': row[5],
                 'tags': row[6],
                 'notes': row[7],
                 'product_visibility': bool(row[8]) if row[8] is not None else None,
+                'otherdocs': normalize_doc_path(row[9]) if row[9] else row[9],
             }
 
         record_app_activity(

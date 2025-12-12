@@ -13,6 +13,24 @@ const BASE_URL = (() => {
 
 const jsonHeaders = { 'Content-Type': 'application/json' } as const;
 
+// Simple in-memory CSRF token cache for SPA calls
+let csrfToken: string | null = null;
+
+function cacheCsrfToken(token?: string) {
+  if (token) csrfToken = token;
+}
+
+async function ensureCsrfToken(): Promise<string | null> {
+  if (csrfToken) return csrfToken;
+  try {
+    const me = await getCurrentUser();
+    cacheCsrfToken(me?.csrf_token);
+    return csrfToken;
+  } catch {
+    return null;
+  }
+}
+
 export async function registerAccount(data: {
   username: string;
   name: string;
@@ -52,7 +70,9 @@ export async function getCurrentUser() {
   const response = await fetch(`${BASE_URL}/api/auth/me`, {
     credentials: 'include',
   });
-  return response.json();
+  const data = await response.json();
+  cacheCsrfToken(data?.csrf_token);
+  return data;
 }
 
 export async function createDistrict(data: {
@@ -163,7 +183,6 @@ export async function createAppRequest(
   return response.json();
 }
 
-// --- Mocks for missing exports to unblock build ---
 export async function getDistrictApps(slug: string) {
   const response = await fetch(`${BASE_URL}/api/districts/${slug}/apps`, {
     credentials: 'include',
@@ -174,12 +193,37 @@ export async function getDistrictApps(slug: string) {
   return response.json();
 }
 
-export async function getAppContacts(appId: number) {
-  return { contacts: [] };
+export async function getAppContacts(_slug: string, appId: number) {
+  const response = await fetch(`${BASE_URL}/api/admin/apps/${appId}/contacts`, {
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error('Unable to load contacts');
+  }
+  const data = await response.json();
+  if (Array.isArray(data)) return data; // defensive for legacy shapes
+  return data.contacts || [];
 }
 
-export async function addAppContact(appId: number, data: any) {
-  return { success: true };
+export async function addAppContact(
+  _slug: string,
+  appId: number,
+  data: any
+) {
+  const token = await ensureCsrfToken();
+  const response = await fetch(`${BASE_URL}/api/admin/apps/${appId}/contacts`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: jsonHeaders,
+    body: JSON.stringify({ ...data, csrf_token: token }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || 'Unable to add contact');
+  }
+
+  return response.json();
 }
 
 export async function updateDistrictApp(
@@ -208,7 +252,20 @@ export async function deleteDistrictAppContact(
   appId: number,
   contactId: number
 ) {
-  return { success: true };
+  const token = await ensureCsrfToken();
+  const response = await fetch(`${BASE_URL}/api/admin/contacts/${contactId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: jsonHeaders,
+    body: JSON.stringify({ csrf_token: token, app_id: appId, district_slug: districtSlug }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || 'Unable to delete contact');
+  }
+
+  return response.json();
 }
 
 // Google Auth (Server Side now preferred, but keeping/mocking if needed)
