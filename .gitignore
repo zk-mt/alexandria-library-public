@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+
+# Python cache and env
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+ENV/
+
+# Flask/SQLite runtime data
+.env
+.env.local
+.env.*
+flask_session/
+data/
+*.db
+
+# Uploaded/static artifacts (persist via Docker volumes)
+static/documents/
+static/global_apps/
+static/product_images/
+
+# Logs and coverage
+*.log
+coverage_html_report/
+htmlcov/
+.pytest_cache/
+
+# Node/Yarn (frontend handled separately, but ignore root-level just in case)
+node_modules/
+.npm/
+pnpm-lock.yaml

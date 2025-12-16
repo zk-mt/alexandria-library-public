@@ -25,11 +25,7 @@ A single-tenant educational app library management system for managing and catal
 ### Docker Deployment (Recommended)
 
 1. Clone the repository
-2. Copy `.env.example` to `.env` and configure:
-   ```bash
-   cp .env.example .env
-   ```
-3. Edit `.env` and set required values:
+2. Edit `.env` and set required values:
 
    - `SECRET_KEY` - Flask session secret (generate with `python -c "import secrets; print(secrets.token_hex(32))"`)
    - `DISTRICT_NAME` - Your organization name
@@ -37,35 +33,13 @@ A single-tenant educational app library management system for managing and catal
    - `INIT_ADMIN_EMAIL` - Initial admin username (default: "admin")
    - `INIT_ADMIN_PASSWORD` - Initial admin password
 
-4. Build and start:
+3. Build and start:
 
    ```bash
-   docker compose up --build
+   docker compose up --build -d
    ```
 
-5. Access the application at `http://localhost:80`
-
-### Local Development
-
-1. Install Python 3.9+ and Node.js 16+
-2. Install backend dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Install frontend dependencies:
-   ```bash
-   cd frontend
-   npm install
-   ```
-4. Run backend (from project root):
-   ```bash
-   python app.py
-   ```
-5. Run frontend (in separate terminal):
-   ```bash
-   cd frontend
-   npm run dev
-   ```
+4. Access the application at `http://localhost:80`
 
 ## Configuration
 
@@ -108,9 +82,8 @@ Alternatively, configure SSO settings through the admin panel after initial setu
 ### First-Time Setup
 
 1. Access the application
-2. If no admin exists, you'll be prompted to create one
-3. Login with your admin credentials
-4. Configure district settings in the admin panel
+2. Login with your admin credentials located in the .env file
+3. Configure district settings in the admin panel
 
 ### Admin Functions
 
