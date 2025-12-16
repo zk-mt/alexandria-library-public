@@ -1,7 +1,7 @@
 # Alexandria Library
 
 A single-tenant educational app library management system for managing and cataloging educational technology applications with privacy compliance tracking.
-
+![divine-general-mahoraga](https://github.com/user-attachments/assets/7e054100-e6ea-4134-a43a-dec54f609ff6)
 ## Features
 
 - **Admin Panel**: Manage apps, review staff requests, track activity logs, and manage users
